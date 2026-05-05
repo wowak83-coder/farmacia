@@ -68,8 +68,7 @@
   input, select {
     font-family:'DM Sans',sans-serif; font-size:1rem; padding:.7rem .9rem;
     background:var(--cream); border:1px solid var(--border); border-radius:2px;
-    color:var(--ink); outline:none; -webkit-appearance:none;
-    transition:border-color .2s;
+    color:var(--ink); outline:none; -webkit-appearance:none; transition:border-color .2s;
   }
   input:focus, select:focus { border-color:var(--ink); }
   input::placeholder { color:var(--ink-muted); }
@@ -96,11 +95,10 @@
   .medicine-item {
     background:var(--warm-white); border:1px solid var(--border); border-radius:2px;
     display:grid; grid-template-columns:4px 1fr auto;
-    gap:.8rem; padding:.9rem 1rem; animation:slideIn .2s ease;
-    align-items:center;
+    gap:.8rem; padding:.9rem 1rem; animation:slideIn .2s ease; align-items:center;
   }
   @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-  .status-bar { width:4px; height:32px; border-radius:2px; align-self:center; }
+  .status-bar { width:4px; height:32px; border-radius:2px; }
   .status-ok { background:var(--sage); }
   .status-warn { background:var(--amber); }
   .status-exp { background:var(--rust); }
@@ -131,20 +129,17 @@
     display:flex; align-items:center; gap:.8rem; padding:.9rem 2rem;
     background:var(--cream); color:var(--ink); border:none; border-radius:2px;
     font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:600; cursor:pointer;
+    text-decoration:none;
   }
   .btn-google svg { width:20px; height:20px; }
 
-  /* INSTALL BANNER */
+  /* iOS install banner */
   .install-banner {
     background:#1e2d1f; border:1px solid #2a3d2b; border-radius:2px;
     padding:.8rem 1rem; margin-bottom:1.2rem;
     display:none; align-items:center; justify-content:space-between; gap:.8rem;
   }
   .install-banner span { font-size:.82rem; color:#8AAE8D; }
-  .btn-install {
-    font-size:.75rem; font-weight:600; padding:.4rem .9rem;
-    background:#5B7B5E; color:white; border:none; border-radius:2px; cursor:pointer; white-space:nowrap;
-  }
   .btn-dismiss { background:none; border:none; color:#4a5e4b; font-size:1rem; cursor:pointer; }
 
   .sync-toast {
@@ -160,11 +155,11 @@
 </head>
 <body>
 
-<div class="login-overlay" id="loginOverlay">
+<div class="login-overlay" id="loginOverlay" style="display:none">
   <div style="font-size:3.5rem">⚕</div>
   <h2>Farmacia di Casa</h2>
   <p>Accedi con Google per salvare i medicinali su Drive e consultarli da qualsiasi dispositivo.</p>
-  <button class="btn-google" id="btnLogin">
+  <a class="btn-google" id="btnLogin" href="#">
     <svg viewBox="0 0 48 48">
       <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.8 2.5 30.2 0 24 0 14.8 0 6.9 5.4 3 13.3l7.9 6.1C12.7 13.2 17.9 9.5 24 9.5z"/>
       <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.9-9.9 6.9-17z"/>
@@ -172,7 +167,7 @@
       <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.1 0-11.3-3.7-13.1-9l-7.9 6.1C6.9 42.6 14.8 48 24 48z"/>
     </svg>
     Accedi con Google
-  </button>
+  </a>
 </div>
 
 <div class="sync-toast" id="syncToast">✓ Salvato su Drive</div>
@@ -196,11 +191,9 @@
 </header>
 
 <main>
-  <!-- Install banner -->
   <div class="install-banner" id="installBanner">
-    <span>📲 Installa l'app sulla home screen</span>
-    <button class="btn-install" id="btnInstall">Installa</button>
-    <button class="btn-dismiss" onclick="dismissInstall()">✕</button>
+    <span id="installText"></span>
+    <button class="btn-dismiss" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
   </div>
 
   <div class="alert-banner" id="alertBanner">⚠️ <strong id="alertText"></strong></div>
@@ -241,76 +234,60 @@
   <div class="medicine-list" id="lista"></div>
 </main>
 
-<script src="https://accounts.google.com/gsi/client" async></script>
 <script>
-const CLIENT_ID = '92383532067-nrhjunlpl0o7dch09t20jr95t7o7m4ge.apps.googleusercontent.com';
-const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-const FNAME = 'medicinali.json';
+// ---- CONFIG ----
+const CLIENT_ID   = '92383532067-nrhjunlpl0o7dch09t20jr95t7o7m4ge.apps.googleusercontent.com';
+const REDIRECT_URI = 'https://wowak83-coder.github.io/farmacia/';
+const SCOPE       = 'https://www.googleapis.com/auth/drive.appdata';
+const FNAME       = 'medicinali.json';
 
 let token = null, fileId = null, medicinali = [], filtro = 'tutti', saveTimer = null;
-let deferredPrompt = null;
-
-// ---- PWA INSTALL ----
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById('installBanner').style.display = 'flex';
-});
-
-document.getElementById('btnInstall').onclick = async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  document.getElementById('installBanner').style.display = 'none';
-};
-
-function dismissInstall() {
-  document.getElementById('installBanner').style.display = 'none';
-}
-
-// Su iOS il banner beforeinstallprompt non funziona — mostriamo istruzioni manuali
-const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-const isStandalone = window.navigator.standalone;
-if (isIOS && !isStandalone) {
-  // Mostra banner con istruzioni iOS dopo il login
-  window.showIOSInstall = true;
-}
 
 // ---- SERVICE WORKER ----
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(console.error);
 }
 
-// ---- AUTH ----
-let tokenClient;
-function initGoogle() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPE,
-    callback: async (resp) => {
-      if (resp.error) return;
-      token = resp.access_token;
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('btnAdd').disabled = false;
-      setStatus('syncing', 'Caricamento...');
-      await loadDrive();
-      if (window.showIOSInstall) showIOSBanner();
-    }
+// ---- OAUTH REDIRECT FLOW ----
+// Costruisce l'URL di autorizzazione Google
+function buildAuthUrl() {
+  const params = new URLSearchParams({
+    client_id:     CLIENT_ID,
+    redirect_uri:  REDIRECT_URI,
+    response_type: 'token',
+    scope:         SCOPE,
+    include_granted_scopes: 'true',
+    prompt: 'select_account'
   });
-  document.getElementById('btnLogin').onclick = () => tokenClient.requestAccessToken();
+  return 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
 }
 
-function showIOSBanner() {
-  const b = document.getElementById('installBanner');
-  b.querySelector('span').textContent = '📲 Su iPhone: tocca  e poi "Aggiungi a Home"';
-  b.style.display = 'flex';
-  b.querySelector('#btnInstall').style.display = 'none';
+// Al caricamento della pagina, controlla se siamo tornati da Google con un token
+function checkRedirectToken() {
+  // Il token arriva nell'hash dell'URL: #access_token=xxx&...
+  const hash = window.location.hash.substring(1);
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  const t = params.get('access_token');
+  const err = params.get('error');
+  // Pulisci l'URL
+  history.replaceState(null, '', window.location.pathname);
+  if (err) { console.error('OAuth error:', err); return null; }
+  return t;
 }
 
 function handleDriveClick() {
-  if (!token) document.getElementById('loginOverlay').style.display = 'flex';
+  if (!token) showLogin();
 }
+
+function showLogin() {
+  document.getElementById('loginOverlay').style.display = 'flex';
+}
+
+document.getElementById('btnLogin').onclick = (e) => {
+  e.preventDefault();
+  window.location.href = buildAuthUrl();
+};
 
 function setStatus(cls, txt) {
   const el = document.getElementById('driveStatus');
@@ -334,11 +311,17 @@ async function loadDrive() {
     }
     setStatus('connected', 'Drive ✓');
     render();
-  } catch(e) { setStatus('', 'Errore'); }
+  } catch(e) {
+    console.error(e);
+    setStatus('', 'Errore');
+  }
 }
 
 async function driveReq(url, opts = {}) {
-  const r = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${token}`, ...(opts.headers||{}) } });
+  const r = await fetch(url, {
+    ...opts,
+    headers: { Authorization: `Bearer ${token}`, ...(opts.headers||{}) }
+  });
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
@@ -366,7 +349,9 @@ async function saveDrive() {
     const t = document.getElementById('syncToast');
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2000);
-  } catch(e) { setStatus('', 'Errore salvataggio'); }
+  } catch(e) {
+    setStatus('', 'Errore salvataggio');
+  }
 }
 
 function scheduleSave() {
@@ -475,8 +460,46 @@ function shake(el) {
   el.addEventListener('animationend', () => el.style.animation = '', { once: true });
 }
 
-function tryInit() { if(window.google?.accounts) initGoogle(); else setTimeout(tryInit, 200); }
-tryInit();
+// ---- iOS INSTALL HINT ----
+const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const isStandalone = window.navigator.standalone;
+if (isIOS && !isStandalone && token) {
+  const b = document.getElementById('installBanner');
+  document.getElementById('installText').textContent = '📲 Tocca  e poi "Aggiungi a schermata Home" per installare l\'app';
+  b.style.display = 'flex';
+}
+
+// ---- INIT ----
+async function init() {
+  const t = checkRedirectToken();
+  if (t) {
+    token = t;
+    // Salva il token in sessionStorage per non perderlo su reload
+    sessionStorage.setItem('farm_token', t);
+  } else {
+    // Prova a recuperare dalla sessione
+    const saved = sessionStorage.getItem('farm_token');
+    if (saved) token = saved;
+  }
+
+  if (token) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('btnAdd').disabled = false;
+    setStatus('syncing', 'Caricamento...');
+    await loadDrive();
+
+    // Mostra hint iOS install dopo il login
+    if (isIOS && !isStandalone) {
+      const b = document.getElementById('installBanner');
+      document.getElementById('installText').textContent = '📲 Tocca ↑ e poi "Aggiungi a schermata Home" per installare l\'app';
+      b.style.display = 'flex';
+    }
+  } else {
+    document.getElementById('loginOverlay').style.display = 'flex';
+  }
+}
+
+init();
 </script>
 </body>
 </html>
