@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Farmacia di Casa</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A1612">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Farmacia">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -16,139 +25,145 @@
   body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--ink); min-height:100vh; }
 
   header {
-    background:var(--ink); padding:1.5rem 3rem;
+    background:var(--ink); padding:1.2rem 1.5rem;
     display:flex; align-items:center; justify-content:space-between;
     position:sticky; top:0; z-index:100;
   }
-  .logo { display:flex; align-items:baseline; gap:.6rem; }
-  .logo h1 { font-family:'DM Serif Display',serif; font-size:1.5rem; color:var(--cream); }
-  .logo small { font-size:.65rem; letter-spacing:.15em; text-transform:uppercase; color:var(--ink-muted); margin-left:.3rem; }
-  .header-right { display:flex; align-items:center; gap:2rem; }
-  .header-stats { display:flex; gap:2rem; }
+  .logo { display:flex; align-items:center; gap:.6rem; }
+  .logo h1 { font-family:'DM Serif Display',serif; font-size:1.3rem; color:var(--cream); }
+  .header-right { display:flex; align-items:center; gap:1rem; }
+  .header-stats { display:flex; gap:1rem; }
   .stat { text-align:right; }
-  .stat-number { font-family:'DM Serif Display',serif; font-size:1.5rem; color:var(--cream); line-height:1; }
-  .stat-label { font-size:.65rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-muted); margin-top:.15rem; }
+  .stat-number { font-family:'DM Serif Display',serif; font-size:1.3rem; color:var(--cream); line-height:1; }
+  .stat-label { font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-muted); }
 
   .drive-status {
-    display:flex; align-items:center; gap:.5rem; font-size:.75rem; color:var(--ink-muted);
-    padding:.5rem 1rem; border:1px solid #333; border-radius:2px; cursor:pointer; transition:all .2s; white-space:nowrap;
+    display:flex; align-items:center; gap:.4rem; font-size:.7rem; color:var(--ink-muted);
+    padding:.4rem .8rem; border:1px solid #333; border-radius:2px; cursor:pointer; white-space:nowrap;
   }
-  .drive-status .dot { width:7px; height:7px; border-radius:50%; background:#555; flex-shrink:0; }
+  .drive-status .dot { width:6px; height:6px; border-radius:50%; background:#555; flex-shrink:0; }
   .drive-status.connected .dot { background:#5B7B5E; }
   .drive-status.connected { color:#8AAE8D; border-color:#2a3d2b; }
   .drive-status.syncing .dot { background:var(--amber); animation:pulse 1s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-  main { max-width:1100px; margin:0 auto; padding:3rem 2rem; }
+  main { max-width:700px; margin:0 auto; padding:1.5rem 1rem; }
 
   .alert-banner {
     background:#FEF5E0; border:1px solid #F0C060; border-left:4px solid var(--amber);
-    border-radius:2px; padding:1rem 1.5rem; margin-bottom:2rem;
-    display:none; align-items:center; gap:.8rem; font-size:.9rem; color:#7A5A10;
+    border-radius:2px; padding:.8rem 1rem; margin-bottom:1.5rem;
+    display:none; align-items:center; gap:.6rem; font-size:.85rem; color:#7A5A10;
   }
 
   .form-card {
     background:var(--warm-white); border:1px solid var(--border); border-radius:2px;
-    padding:2.5rem; margin-bottom:3rem; position:relative; overflow:hidden;
+    padding:1.5rem; margin-bottom:2rem; position:relative; overflow:hidden;
   }
   .form-card::before { content:''; position:absolute; left:0;top:0;bottom:0; width:4px; background:var(--ink); }
-  .form-title { font-family:'DM Serif Display',serif; font-size:1.3rem; margin-bottom:2rem; padding-left:1rem; }
-  .form-grid { display:grid; grid-template-columns:2fr 1.2fr 1.2fr 1fr auto; gap:1rem; align-items:end; }
-  .field { display:flex; flex-direction:column; gap:.4rem; }
-  label { font-size:.65rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-muted); font-weight:500; }
+  .form-title { font-family:'DM Serif Display',serif; font-size:1.1rem; margin-bottom:1.2rem; padding-left:.8rem; }
+  .form-col { display:flex; flex-direction:column; gap:.8rem; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+  .field { display:flex; flex-direction:column; gap:.3rem; }
+  label { font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-muted); font-weight:500; }
   input, select {
-    font-family:'DM Sans',sans-serif; font-size:.95rem; padding:.75rem 1rem;
+    font-family:'DM Sans',sans-serif; font-size:1rem; padding:.7rem .9rem;
     background:var(--cream); border:1px solid var(--border); border-radius:2px;
-    color:var(--ink); outline:none; transition:border-color .2s,box-shadow .2s; -webkit-appearance:none;
+    color:var(--ink); outline:none; -webkit-appearance:none;
+    transition:border-color .2s;
   }
-  input:focus, select:focus { border-color:var(--ink); box-shadow:0 0 0 3px rgba(26,22,18,.06); }
+  input:focus, select:focus { border-color:var(--ink); }
   input::placeholder { color:var(--ink-muted); }
   .btn-add {
-    font-family:'DM Sans',sans-serif; font-size:.85rem; font-weight:600; letter-spacing:.05em;
-    padding:.78rem 1.8rem; background:var(--ink); color:var(--cream);
-    border:none; border-radius:2px; cursor:pointer; white-space:nowrap; transition:background .2s,transform .1s;
+    font-family:'DM Sans',sans-serif; font-size:.9rem; font-weight:600;
+    padding:.8rem; background:var(--ink); color:var(--cream);
+    border:none; border-radius:2px; cursor:pointer; width:100%;
+    transition:background .2s; margin-top:.4rem;
   }
-  .btn-add:hover { background:#2D2620; }
-  .btn-add:active { transform:scale(.98); }
+  .btn-add:active { background:#2D2620; }
   .btn-add:disabled { opacity:.4; cursor:not-allowed; }
 
-  .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem; }
-  .section-title { font-family:'DM Serif Display',serif; font-size:1.8rem; }
-  .filters { display:flex; gap:.4rem; }
+  .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; gap:.5rem; }
+  .section-title { font-family:'DM Serif Display',serif; font-size:1.4rem; }
+  .filters { display:flex; gap:.3rem; flex-wrap:wrap; }
   .filter-btn {
-    font-family:'DM Sans',sans-serif; font-size:.75rem; font-weight:500;
-    letter-spacing:.08em; text-transform:uppercase; padding:.5rem 1.1rem;
-    border:1px solid var(--border); border-radius:2px; background:transparent;
-    color:var(--ink-muted); cursor:pointer; transition:all .15s;
+    font-size:.65rem; font-weight:500; letter-spacing:.06em; text-transform:uppercase;
+    padding:.4rem .7rem; border:1px solid var(--border); border-radius:2px;
+    background:transparent; color:var(--ink-muted); cursor:pointer;
   }
-  .filter-btn:hover { border-color:var(--ink); color:var(--ink); }
   .filter-btn.active { background:var(--ink); color:var(--cream); border-color:var(--ink); }
 
-  .medicine-list { display:flex; flex-direction:column; gap:.6rem; }
+  .medicine-list { display:flex; flex-direction:column; gap:.5rem; }
   .medicine-item {
     background:var(--warm-white); border:1px solid var(--border); border-radius:2px;
-    display:grid; grid-template-columns:.3fr 2fr 1.2fr 1fr 1.2fr 1fr auto;
-    align-items:center; gap:1rem; padding:1.1rem 1.5rem;
-    transition:box-shadow .2s,transform .15s; animation:slideIn .25s ease;
+    display:grid; grid-template-columns:4px 1fr auto;
+    gap:.8rem; padding:.9rem 1rem; animation:slideIn .2s ease;
+    align-items:center;
   }
-  @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-  .medicine-item:hover { box-shadow:0 4px 20px var(--shadow); transform:translateY(-1px); }
-  .status-bar { width:4px; height:36px; border-radius:2px; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+  .status-bar { width:4px; height:32px; border-radius:2px; align-self:center; }
   .status-ok { background:var(--sage); }
   .status-warn { background:var(--amber); }
   .status-exp { background:var(--rust); }
-  .med-name { font-family:'DM Serif Display',serif; font-size:1.1rem; }
-  .med-category { font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-muted); margin-top:.15rem; }
-  .med-qty { font-size:.9rem; color:var(--ink-soft); }
-  .med-qty strong { font-size:1.1rem; color:var(--ink); }
-  .med-expiry { font-variant-numeric:tabular-nums; font-size:.9rem; }
-  .badge { display:inline-block; padding:.3rem .7rem; border-radius:2px; font-size:.7rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
-  .badge-ok { background:#EAF2EB; color:var(--sage); }
+  .med-info { min-width:0; }
+  .med-name { font-family:'DM Serif Display',serif; font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .med-meta { font-size:.72rem; color:var(--ink-muted); margin-top:.15rem; display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; }
+  .badge { display:inline-block; padding:.15rem .5rem; border-radius:2px; font-size:.65rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+  .badge-ok   { background:#EAF2EB; color:var(--sage); }
   .badge-warn { background:#FEF5E0; color:var(--amber); }
-  .badge-exp { background:#FAECE8; color:var(--rust); }
-  .med-note { font-size:.82rem; color:var(--ink-muted); font-style:italic; }
-  .btn-delete { background:none; border:none; color:var(--border); font-size:1.2rem; cursor:pointer; padding:.3rem; transition:color .15s; border-radius:2px; }
-  .btn-delete:hover { color:var(--rust); }
+  .badge-exp  { background:#FAECE8; color:var(--rust); }
+  .btn-delete { background:none; border:none; color:var(--border); font-size:1.1rem; cursor:pointer; padding:.3rem; flex-shrink:0; }
+  .btn-delete:active { color:var(--rust); }
 
-  .empty-state { text-align:center; padding:5rem 2rem; }
-  .empty-icon { font-size:3.5rem; margin-bottom:1rem; opacity:.4; }
-  .empty-state p { font-family:'DM Serif Display',serif; font-size:1.3rem; color:var(--ink-soft); }
-  .empty-state small { font-size:.85rem; color:var(--ink-muted); display:block; margin-top:.4rem; }
+  .empty-state { text-align:center; padding:4rem 1rem; }
+  .empty-icon { font-size:3rem; margin-bottom:1rem; opacity:.4; }
+  .empty-state p { font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--ink-soft); }
+  .empty-state small { font-size:.8rem; color:var(--ink-muted); display:block; margin-top:.3rem; }
 
-  /* LOGIN OVERLAY */
+  /* LOGIN */
   .login-overlay {
     position:fixed; inset:0; background:var(--ink);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    z-index:999; gap:1.5rem;
+    z-index:999; gap:1.2rem; padding:2rem;
   }
-  .login-overlay h2 { font-family:'DM Serif Display',serif; font-size:2.5rem; color:var(--cream); }
-  .login-overlay p { color:var(--ink-muted); font-size:.95rem; text-align:center; max-width:400px; line-height:1.7; }
+  .login-overlay h2 { font-family:'DM Serif Display',serif; font-size:2rem; color:var(--cream); }
+  .login-overlay p { color:var(--ink-muted); font-size:.9rem; text-align:center; max-width:320px; line-height:1.6; }
   .btn-google {
-    display:flex; align-items:center; gap:.8rem;
-    padding:.9rem 2rem; background:var(--cream); color:var(--ink);
-    border:none; border-radius:2px; font-family:'DM Sans',sans-serif;
-    font-size:1rem; font-weight:600; cursor:pointer; transition:transform .15s,box-shadow .15s;
+    display:flex; align-items:center; gap:.8rem; padding:.9rem 2rem;
+    background:var(--cream); color:var(--ink); border:none; border-radius:2px;
+    font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:600; cursor:pointer;
   }
-  .btn-google:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.3); }
   .btn-google svg { width:20px; height:20px; }
 
+  /* INSTALL BANNER */
+  .install-banner {
+    background:#1e2d1f; border:1px solid #2a3d2b; border-radius:2px;
+    padding:.8rem 1rem; margin-bottom:1.2rem;
+    display:none; align-items:center; justify-content:space-between; gap:.8rem;
+  }
+  .install-banner span { font-size:.82rem; color:#8AAE8D; }
+  .btn-install {
+    font-size:.75rem; font-weight:600; padding:.4rem .9rem;
+    background:#5B7B5E; color:white; border:none; border-radius:2px; cursor:pointer; white-space:nowrap;
+  }
+  .btn-dismiss { background:none; border:none; color:#4a5e4b; font-size:1rem; cursor:pointer; }
+
   .sync-toast {
-    position:fixed; bottom:2rem; right:2rem;
-    background:var(--ink); color:var(--cream); padding:.7rem 1.2rem;
-    border-radius:2px; font-size:.8rem; opacity:0;
-    transition:opacity .3s; pointer-events:none;
+    position:fixed; bottom:1.5rem; right:1rem; left:1rem;
+    background:var(--ink); color:var(--cream); padding:.7rem 1rem;
+    border-radius:2px; font-size:.8rem; text-align:center;
+    opacity:0; transition:opacity .3s; pointer-events:none; z-index:200;
   }
   .sync-toast.show { opacity:1; }
 
-  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 </style>
 </head>
 <body>
 
 <div class="login-overlay" id="loginOverlay">
-  <div style="font-size:4rem">⚕</div>
+  <div style="font-size:3.5rem">⚕</div>
   <h2>Farmacia di Casa</h2>
-  <p>Accedi con Google per salvare i tuoi medicinali su Drive e ritrovarli su qualsiasi dispositivo.</p>
+  <p>Accedi con Google per salvare i medicinali su Drive e consultarli da qualsiasi dispositivo.</p>
   <button class="btn-google" id="btnLogin">
     <svg viewBox="0 0 48 48">
       <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.8 2.5 30.2 0 24 0 14.8 0 6.9 5.4 3 13.3l7.9 6.1C12.7 13.2 17.9 9.5 24 9.5z"/>
@@ -164,53 +179,61 @@
 
 <header>
   <div class="logo">
-    <span style="font-size:1.4rem">⚕</span>
-    <div>
-      <h1>Farmacia di Casa</h1>
-      <small>Gestione medicinali</small>
-    </div>
+    <span style="font-size:1.3rem">⚕</span>
+    <h1>Farmacia di Casa</h1>
   </div>
   <div class="header-right">
     <div class="header-stats">
-      <div class="stat"><div class="stat-number" id="statTotale">0</div><div class="stat-label">Totale</div></div>
-      <div class="stat"><div class="stat-number" id="statScaduti">0</div><div class="stat-label">Scaduti</div></div>
-      <div class="stat"><div class="stat-number" id="statInScadenza">0</div><div class="stat-label">In scadenza</div></div>
+      <div class="stat"><div class="stat-number" id="statTotale">0</div><div class="stat-label">Tot</div></div>
+      <div class="stat"><div class="stat-number" id="statScaduti">0</div><div class="stat-label">Scad</div></div>
+      <div class="stat"><div class="stat-number" id="statWarn">0</div><div class="stat-label">Avvisi</div></div>
     </div>
     <div class="drive-status" id="driveStatus" onclick="handleDriveClick()">
       <div class="dot"></div>
-      <span id="driveStatusText">Non connesso</span>
+      <span id="driveStatusText">Drive</span>
     </div>
   </div>
 </header>
 
 <main>
+  <!-- Install banner -->
+  <div class="install-banner" id="installBanner">
+    <span>📲 Installa l'app sulla home screen</span>
+    <button class="btn-install" id="btnInstall">Installa</button>
+    <button class="btn-dismiss" onclick="dismissInstall()">✕</button>
+  </div>
+
   <div class="alert-banner" id="alertBanner">⚠️ <strong id="alertText"></strong></div>
 
   <div class="form-card">
     <div class="form-title">+ Aggiungi medicinale</div>
-    <div class="form-grid">
+    <div class="form-col">
       <div class="field"><label>Nome medicinale</label><input type="text" id="inNome" placeholder="es. Tachipirina 1000mg"/></div>
-      <div class="field">
-        <label>Categoria</label>
-        <select id="inCategoria">
-          <option>Analgesico</option><option>Antibiotico</option><option>Antinfiammatorio</option>
-          <option>Antiistaminico</option><option>Gastrointestinale</option><option>Vitamina/Integratore</option>
-          <option>Collirio/Nasale</option><option>Cerotti/Bende</option><option>Altro</option>
-        </select>
+      <div class="form-row">
+        <div class="field">
+          <label>Categoria</label>
+          <select id="inCategoria">
+            <option>Analgesico</option><option>Antibiotico</option><option>Antinfiammatorio</option>
+            <option>Antiistaminico</option><option>Gastrointestinale</option><option>Vitamina/Integratore</option>
+            <option>Collirio/Nasale</option><option>Cerotti/Bende</option><option>Altro</option>
+          </select>
+        </div>
+        <div class="field"><label>Scadenza</label><input type="month" id="inScadenza"/></div>
       </div>
-      <div class="field"><label>Scadenza</label><input type="month" id="inScadenza"/></div>
-      <div class="field"><label>Quantità</label><input type="text" id="inQuantita" placeholder="es. 1 scatola"/></div>
+      <div class="form-row">
+        <div class="field"><label>Quantità</label><input type="text" id="inQuantita" placeholder="es. 1 scatola"/></div>
+        <div class="field"><label>Note</label><input type="text" id="inNote" placeholder="opzionale"/></div>
+      </div>
       <button class="btn-add" id="btnAdd" onclick="aggiungi()" disabled>Aggiungi</button>
     </div>
-    <div class="field" style="margin-top:1rem"><label>Note (opzionale)</label><input type="text" id="inNote" placeholder="es. Solo su prescrizione"/></div>
   </div>
 
   <div class="toolbar">
-    <div class="section-title">I miei medicinali</div>
+    <div class="section-title">Medicinali</div>
     <div class="filters">
       <button class="filter-btn active" onclick="setFilter('tutti',this)">Tutti</button>
-      <button class="filter-btn" onclick="setFilter('ok',this)">✓ Validi</button>
-      <button class="filter-btn" onclick="setFilter('warn',this)">⚡ In scadenza</button>
+      <button class="filter-btn" onclick="setFilter('ok',this)">✓ OK</button>
+      <button class="filter-btn" onclick="setFilter('warn',this)">⚡ Presto</button>
       <button class="filter-btn" onclick="setFilter('exp',this)">✗ Scaduti</button>
     </div>
   </div>
@@ -220,11 +243,44 @@
 
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script>
-const CLIENT_ID = '54105505277-mpjicbtvqb7aucmku1lcmpv88fj3tpda.apps.googleusercontent.com';
+const CLIENT_ID = '92383532067-nrhjunlpl0o7dch09t20jr95t7o7m4ge.apps.googleusercontent.com';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const FNAME = 'medicinali.json';
 
 let token = null, fileId = null, medicinali = [], filtro = 'tutti', saveTimer = null;
+let deferredPrompt = null;
+
+// ---- PWA INSTALL ----
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+
+document.getElementById('btnInstall').onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+};
+
+function dismissInstall() {
+  document.getElementById('installBanner').style.display = 'none';
+}
+
+// Su iOS il banner beforeinstallprompt non funziona — mostriamo istruzioni manuali
+const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const isStandalone = window.navigator.standalone;
+if (isIOS && !isStandalone) {
+  // Mostra banner con istruzioni iOS dopo il login
+  window.showIOSInstall = true;
+}
+
+// ---- SERVICE WORKER ----
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(console.error);
+}
 
 // ---- AUTH ----
 let tokenClient;
@@ -239,9 +295,17 @@ function initGoogle() {
       document.getElementById('btnAdd').disabled = false;
       setStatus('syncing', 'Caricamento...');
       await loadDrive();
+      if (window.showIOSInstall) showIOSBanner();
     }
   });
   document.getElementById('btnLogin').onclick = () => tokenClient.requestAccessToken();
+}
+
+function showIOSBanner() {
+  const b = document.getElementById('installBanner');
+  b.querySelector('span').textContent = '📲 Su iPhone: tocca  e poi "Aggiungi a Home"';
+  b.style.display = 'flex';
+  b.querySelector('#btnInstall').style.display = 'none';
 }
 
 function handleDriveClick() {
@@ -255,32 +319,28 @@ function setStatus(cls, txt) {
 }
 
 // ---- DRIVE ----
-async function api(url, opts = {}) {
-  const r = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${token}`, ...(opts.headers||{}) } });
-  if (!r.ok) throw new Error(r.status);
-  const ct = r.headers.get('content-type') || '';
-  return ct.includes('json') ? r.json() : r.text();
-}
-
 async function loadDrive() {
   try {
-    const res = await api(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${FNAME}'&fields=files(id)`);
-    if (res.files && res.files.length) {
+    const res = await driveReq(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${FNAME}'&fields=files(id)`);
+    if (res.files?.length) {
       fileId = res.files[0].id;
-      const raw = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      medicinali = await raw.json();
+      medicinali = await r.json();
     } else {
       medicinali = [];
       await createFile();
     }
-    setStatus('connected', 'Connesso a Drive');
+    setStatus('connected', 'Drive ✓');
     render();
-  } catch(e) {
-    console.error(e);
-    setStatus('', 'Errore connessione');
-  }
+  } catch(e) { setStatus('', 'Errore'); }
+}
+
+async function driveReq(url, opts = {}) {
+  const r = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${token}`, ...(opts.headers||{}) } });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
 }
 
 async function createFile() {
@@ -290,26 +350,23 @@ async function createFile() {
   const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
     method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form
   });
-  const d = await r.json();
-  fileId = d.id;
+  fileId = (await r.json()).id;
 }
 
 async function saveDrive() {
   if (!token || !fileId) return;
-  setStatus('syncing', 'Salvataggio...');
+  setStatus('syncing', 'Salvo...');
   try {
     await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(medicinali)
     });
-    setStatus('connected', 'Connesso a Drive');
+    setStatus('connected', 'Drive ✓');
     const t = document.getElementById('syncToast');
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
-  } catch(e) {
-    setStatus('', 'Errore salvataggio');
-  }
+    setTimeout(() => t.classList.remove('show'), 2000);
+  } catch(e) { setStatus('', 'Errore salvataggio'); }
 }
 
 function scheduleSave() {
@@ -344,7 +401,7 @@ function render() {
   items.sort((a,b) => {
     const o={exp:0,warn:1,ok:2};
     const d = o[getStatus(a.scadenza)] - o[getStatus(b.scadenza)];
-    return d||a.scadenza.localeCompare(b.scadenza);
+    return d || a.scadenza.localeCompare(b.scadenza);
   });
 
   lista.innerHTML = !items.length
@@ -353,18 +410,23 @@ function render() {
         const s = getStatus(m.scadenza);
         return `<div class="medicine-item">
           <div class="status-bar status-${s}"></div>
-          <div><div class="med-name">${m.nome}</div><div class="med-category">${icon(m.categoria)} ${m.categoria}</div></div>
-          <div class="med-qty"><strong>${m.quantita||'—'}</strong></div>
-          <div class="med-expiry">${fmtDate(m.scadenza)}</div>
-          <div>${badge(s)}</div>
-          <div class="med-note">${m.note||''}</div>
+          <div class="med-info">
+            <div class="med-name">${m.nome}</div>
+            <div class="med-meta">
+              <span>${icon(m.categoria)} ${m.categoria}</span>
+              <span>📅 ${fmtDate(m.scadenza)}</span>
+              ${m.quantita ? `<span>📦 ${m.quantita}</span>` : ''}
+              ${badge(s)}
+            </div>
+            ${m.note ? `<div style="font-size:.72rem;color:var(--ink-muted);margin-top:.2rem;font-style:italic">${m.note}</div>` : ''}
+          </div>
           <button class="btn-delete" onclick="elimina('${m.id}')">✕</button>
         </div>`;
       }).join('');
 
   document.getElementById('statTotale').textContent = medicinali.length;
   document.getElementById('statScaduti').textContent = medicinali.filter(m=>getStatus(m.scadenza)==='exp').length;
-  document.getElementById('statInScadenza').textContent = medicinali.filter(m=>getStatus(m.scadenza)==='warn').length;
+  document.getElementById('statWarn').textContent = medicinali.filter(m=>getStatus(m.scadenza)==='warn').length;
 
   const sc = medicinali.filter(m=>getStatus(m.scadenza)==='exp').length;
   const wa = medicinali.filter(m=>getStatus(m.scadenza)==='warn').length;
@@ -373,7 +435,7 @@ function render() {
     const p = [];
     if (sc) p.push(`${sc} medicinale${sc>1?'i':''} scadut${sc>1?'i':'o'}`);
     if (wa) p.push(`${wa} in scadenza nei prossimi 3 mesi`);
-    document.getElementById('alertText').textContent = p.join(' · ') + ' — controlla la tua armadietto!';
+    document.getElementById('alertText').textContent = p.join(' · ') + ' — controlla l\'armadietto!';
     banner.style.display = 'flex';
   } else banner.style.display = 'none';
 }
@@ -392,30 +454,27 @@ function aggiungi() {
     note: document.getElementById('inNote').value.trim()
   });
   scheduleSave(); render();
-  ['inNome','inScadenza','inQuantita','inNote'].forEach(id=>document.getElementById(id).value='');
+  ['inNome','inScadenza','inQuantita','inNote'].forEach(id => document.getElementById(id).value = '');
 }
 
 function elimina(id) {
-  medicinali = medicinali.filter(m=>m.id!==id);
+  medicinali = medicinali.filter(m => m.id !== id);
   scheduleSave(); render();
 }
 
 function setFilter(f, btn) {
   filtro = f;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   render();
 }
 
 function shake(el) {
-  el.style.animation='none'; el.offsetHeight;
-  el.style.animation='shake .3s ease';
-  el.addEventListener('animationend',()=>el.style.animation='',{once:true});
+  el.style.animation = 'none'; el.offsetHeight;
+  el.style.animation = 'shake .3s ease';
+  el.addEventListener('animationend', () => el.style.animation = '', { once: true });
 }
 
-document.addEventListener('keydown', e => { if(e.key==='Enter') aggiungi(); });
-
-// Init when GSI ready
 function tryInit() { if(window.google?.accounts) initGoogle(); else setTimeout(tryInit, 200); }
 tryInit();
 </script>
