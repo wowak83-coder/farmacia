@@ -117,7 +117,6 @@
   .empty-state p { font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--ink-soft); }
   .empty-state small { font-size:.8rem; color:var(--ink-muted); display:block; margin-top:.3rem; }
 
-  /* LOGIN */
   .login-overlay {
     position:fixed; inset:0; background:var(--ink);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -133,7 +132,6 @@
   }
   .btn-google svg { width:20px; height:20px; }
 
-  /* iOS install banner */
   .install-banner {
     background:#1e2d1f; border:1px solid #2a3d2b; border-radius:2px;
     padding:.8rem 1rem; margin-bottom:1.2rem;
@@ -235,11 +233,10 @@
 </main>
 
 <script>
-// ---- CONFIG ----
-const CLIENT_ID   = '92383532067-nrhjunlpl0o7dch09t20jr95t7o7m4ge.apps.googleusercontent.com';
+const CLIENT_ID    = '54105505277-mlpjcl83b3rq5g3um5phv2hshn6vdkam.apps.googleusercontent.com';
 const REDIRECT_URI = 'https://wowak83-coder.github.io/farmacia/';
-const SCOPE       = 'https://www.googleapis.com/auth/drive.appdata';
-const FNAME       = 'medicinali.json';
+const SCOPE        = 'https://www.googleapis.com/auth/drive.appdata';
+const FNAME        = 'medicinali.json';
 
 let token = null, fileId = null, medicinali = [], filtro = 'tutti', saveTimer = null;
 
@@ -248,8 +245,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(console.error);
 }
 
-// ---- OAUTH REDIRECT FLOW ----
-// Costruisce l'URL di autorizzazione Google
+// ---- OAuth REDIRECT FLOW ----
 function buildAuthUrl() {
   const params = new URLSearchParams({
     client_id:     CLIENT_ID,
@@ -262,26 +258,18 @@ function buildAuthUrl() {
   return 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
 }
 
-// Al caricamento della pagina, controlla se siamo tornati da Google con un token
 function checkRedirectToken() {
-  // Il token arriva nell'hash dell'URL: #access_token=xxx&...
   const hash = window.location.hash.substring(1);
   if (!hash) return null;
   const params = new URLSearchParams(hash);
   const t = params.get('access_token');
-  const err = params.get('error');
   // Pulisci l'URL
   history.replaceState(null, '', window.location.pathname);
-  if (err) { console.error('OAuth error:', err); return null; }
-  return t;
+  return t || null;
 }
 
 function handleDriveClick() {
-  if (!token) showLogin();
-}
-
-function showLogin() {
-  document.getElementById('loginOverlay').style.display = 'flex';
+  if (!token) document.getElementById('loginOverlay').style.display = 'flex';
 }
 
 document.getElementById('btnLogin').onclick = (e) => {
@@ -460,26 +448,15 @@ function shake(el) {
   el.addEventListener('animationend', () => el.style.animation = '', { once: true });
 }
 
-// ---- iOS INSTALL HINT ----
-const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-const isStandalone = window.navigator.standalone;
-if (isIOS && !isStandalone && token) {
-  const b = document.getElementById('installBanner');
-  document.getElementById('installText').textContent = '📲 Tocca  e poi "Aggiungi a schermata Home" per installare l\'app';
-  b.style.display = 'flex';
-}
-
 // ---- INIT ----
 async function init() {
-  const t = checkRedirectToken();
+  // Controlla se torniamo da Google con il token nell'hash
+  let t = checkRedirectToken();
   if (t) {
-    token = t;
-    // Salva il token in sessionStorage per non perderlo su reload
     sessionStorage.setItem('farm_token', t);
+    token = t;
   } else {
-    // Prova a recuperare dalla sessione
-    const saved = sessionStorage.getItem('farm_token');
-    if (saved) token = saved;
+    token = sessionStorage.getItem('farm_token');
   }
 
   if (token) {
@@ -488,11 +465,12 @@ async function init() {
     setStatus('syncing', 'Caricamento...');
     await loadDrive();
 
-    // Mostra hint iOS install dopo il login
+    // Hint installazione iOS
+    const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+    const isStandalone = window.navigator.standalone;
     if (isIOS && !isStandalone) {
-      const b = document.getElementById('installBanner');
       document.getElementById('installText').textContent = '📲 Tocca ↑ e poi "Aggiungi a schermata Home" per installare l\'app';
-      b.style.display = 'flex';
+      document.getElementById('installBanner').style.display = 'flex';
     }
   } else {
     document.getElementById('loginOverlay').style.display = 'flex';
