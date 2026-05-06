@@ -4,22 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Farmacia di Casa</title>
-
-<!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1A1612">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Farmacia">
 <link rel="apple-touch-icon" href="icon-192.png">
-
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --cream: #F7F3EE; --warm-white: #FDFAF7; --ink: #1A1612;
     --ink-soft: #4A3F35; --ink-muted: #8C7D70;
     --rust: #C4552A; --sage: #5B7B5E; --amber: #D4891A;
-    --border: #E0D6CC; --shadow: rgba(26,22,18,0.08);
+    --border: #E0D6CC;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--ink); min-height:100vh; }
@@ -37,14 +34,14 @@
   .stat-number { font-family:'DM Serif Display',serif; font-size:1.3rem; color:var(--cream); line-height:1; }
   .stat-label { font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-muted); }
 
-  .drive-status {
+  .db-status {
     display:flex; align-items:center; gap:.4rem; font-size:.7rem; color:var(--ink-muted);
-    padding:.4rem .8rem; border:1px solid #333; border-radius:2px; cursor:pointer; white-space:nowrap;
+    padding:.4rem .8rem; border:1px solid #333; border-radius:2px; white-space:nowrap;
   }
-  .drive-status .dot { width:6px; height:6px; border-radius:50%; background:#555; flex-shrink:0; }
-  .drive-status.connected .dot { background:#5B7B5E; }
-  .drive-status.connected { color:#8AAE8D; border-color:#2a3d2b; }
-  .drive-status.syncing .dot { background:var(--amber); animation:pulse 1s infinite; }
+  .db-status .dot { width:6px; height:6px; border-radius:50%; background:#555; flex-shrink:0; }
+  .db-status.connected .dot { background:#5B7B5E; }
+  .db-status.connected { color:#8AAE8D; border-color:#2a3d2b; }
+  .db-status.syncing .dot { background:var(--amber); animation:pulse 1s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
   main { max-width:700px; margin:0 auto; padding:1.5rem 1rem; }
@@ -75,13 +72,12 @@
   .btn-add {
     font-family:'DM Sans',sans-serif; font-size:.9rem; font-weight:600;
     padding:.8rem; background:var(--ink); color:var(--cream);
-    border:none; border-radius:2px; cursor:pointer; width:100%;
-    transition:background .2s; margin-top:.4rem;
+    border:none; border-radius:2px; cursor:pointer; width:100%; margin-top:.4rem;
   }
   .btn-add:active { background:#2D2620; }
   .btn-add:disabled { opacity:.4; cursor:not-allowed; }
 
-  .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; gap:.5rem; }
+  .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; gap:.5rem; flex-wrap:wrap; }
   .section-title { font-family:'DM Serif Display',serif; font-size:1.4rem; }
   .filters { display:flex; gap:.3rem; flex-wrap:wrap; }
   .filter-btn {
@@ -117,6 +113,7 @@
   .empty-state p { font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--ink-soft); }
   .empty-state small { font-size:.8rem; color:var(--ink-muted); display:block; margin-top:.3rem; }
 
+  /* LOGIN */
   .login-overlay {
     position:fixed; inset:0; background:var(--ink);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -128,10 +125,11 @@
     display:flex; align-items:center; gap:.8rem; padding:.9rem 2rem;
     background:var(--cream); color:var(--ink); border:none; border-radius:2px;
     font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:600; cursor:pointer;
-    text-decoration:none;
   }
   .btn-google svg { width:20px; height:20px; }
+  .btn-google:disabled { opacity:.5; cursor:not-allowed; }
 
+  /* iOS hint */
   .install-banner {
     background:#1e2d1f; border:1px solid #2a3d2b; border-radius:2px;
     padding:.8rem 1rem; margin-bottom:1.2rem;
@@ -153,11 +151,11 @@
 </head>
 <body>
 
-<div class="login-overlay" id="loginOverlay" style="display:none">
+<div class="login-overlay" id="loginOverlay">
   <div style="font-size:3.5rem">⚕</div>
   <h2>Farmacia di Casa</h2>
-  <p>Accedi con Google per salvare i medicinali su Drive e consultarli da qualsiasi dispositivo.</p>
-  <a class="btn-google" id="btnLogin" href="#">
+  <p>Accedi con Google per salvare i medicinali e consultarli da qualsiasi dispositivo.</p>
+  <button class="btn-google" id="btnLogin" onclick="loginGoogle()">
     <svg viewBox="0 0 48 48">
       <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.8 2.5 30.2 0 24 0 14.8 0 6.9 5.4 3 13.3l7.9 6.1C12.7 13.2 17.9 9.5 24 9.5z"/>
       <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.9-9.9 6.9-17z"/>
@@ -165,10 +163,10 @@
       <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.1 0-11.3-3.7-13.1-9l-7.9 6.1C6.9 42.6 14.8 48 24 48z"/>
     </svg>
     Accedi con Google
-  </a>
+  </button>
 </div>
 
-<div class="sync-toast" id="syncToast">✓ Salvato su Drive</div>
+<div class="sync-toast" id="syncToast">✓ Salvato</div>
 
 <header>
   <div class="logo">
@@ -181,9 +179,9 @@
       <div class="stat"><div class="stat-number" id="statScaduti">0</div><div class="stat-label">Scad</div></div>
       <div class="stat"><div class="stat-number" id="statWarn">0</div><div class="stat-label">Avvisi</div></div>
     </div>
-    <div class="drive-status" id="driveStatus" onclick="handleDriveClick()">
+    <div class="db-status" id="dbStatus">
       <div class="dot"></div>
-      <span id="driveStatusText">Drive</span>
+      <span id="dbStatusText">—</span>
     </div>
   </div>
 </header>
@@ -232,120 +230,116 @@
   <div class="medicine-list" id="lista"></div>
 </main>
 
-<script>
-const CLIENT_ID    = '54105505277-mlpjcl83b3rq5g3um5phv2hshn6vdkam.apps.googleusercontent.com';
-const REDIRECT_URI = 'https://wowak83-coder.github.io/farmacia/';
-const SCOPE        = 'https://www.googleapis.com/auth/drive.appdata';
-const FNAME        = 'medicinali.json';
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, addDoc, deleteDoc, onSnapshot, query, orderBy }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-let token = null, fileId = null, medicinali = [], filtro = 'tutti', saveTimer = null;
+// ---- FIREBASE CONFIG ----
+const app = initializeApp({
+  apiKey: "AIzaSyA90AnXrXPimDjwF6EGLppGW5SnSQnVxvY",
+  authDomain: "farmacia-di-casa-5020f.firebaseapp.com",
+  projectId: "farmacia-di-casa-5020f",
+  storageBucket: "farmacia-di-casa-5020f.firebasestorage.app",
+  messagingSenderId: "421483950970",
+  appId: "1:421483950970:web:7bbf5952daf0034364dcc3"
+});
 
-// ---- SERVICE WORKER ----
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(console.error);
-}
+const auth = getAuth(app);
+const db   = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-// ---- OAuth REDIRECT FLOW ----
-function buildAuthUrl() {
-  const params = new URLSearchParams({
-    client_id:     CLIENT_ID,
-    redirect_uri:  REDIRECT_URI,
-    response_type: 'token',
-    scope:         SCOPE,
-    include_granted_scopes: 'true',
-    prompt: 'select_account'
-  });
-  return 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-}
+let filtro = 'tutti';
+let medicinali = [];
+let unsubscribe = null;
 
-function checkRedirectToken() {
-  const hash = window.location.hash.substring(1);
-  if (!hash) return null;
-  const params = new URLSearchParams(hash);
-  const t = params.get('access_token');
-  // Pulisci l'URL
-  history.replaceState(null, '', window.location.pathname);
-  return t || null;
-}
-
-function handleDriveClick() {
-  if (!token) document.getElementById('loginOverlay').style.display = 'flex';
-}
-
-document.getElementById('btnLogin').onclick = (e) => {
-  e.preventDefault();
-  window.location.href = buildAuthUrl();
+// ---- AUTH ----
+window.loginGoogle = async () => {
+  document.getElementById('btnLogin').disabled = true;
+  try {
+    await signInWithRedirect(auth, provider);
+  } catch(e) {
+    console.error(e);
+    document.getElementById('btnLogin').disabled = false;
+  }
 };
 
-function setStatus(cls, txt) {
-  const el = document.getElementById('driveStatus');
-  el.className = 'drive-status ' + cls;
-  document.getElementById('driveStatusText').textContent = txt;
+// Gestisci il ritorno dal redirect
+getRedirectResult(auth).catch(console.error);
+
+// Osserva lo stato di autenticazione
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('btnAdd').disabled = false;
+    setStatus('connected', 'Firebase ✓');
+    startListening(user.uid);
+    showIOSHint();
+  } else {
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('btnAdd').disabled = true;
+    setStatus('', '—');
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  }
+});
+
+// ---- FIRESTORE REALTIME ----
+function startListening(uid) {
+  if (unsubscribe) unsubscribe();
+  const q = query(
+    collection(db, 'users', uid, 'medicinali'),
+    orderBy('scadenza', 'asc')
+  );
+  unsubscribe = onSnapshot(q, snap => {
+    medicinali = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  });
 }
 
-// ---- DRIVE ----
-async function loadDrive() {
+// ---- ACTIONS ----
+window.aggiungi = async () => {
+  const nome = document.getElementById('inNome').value.trim();
+  const scadenza = document.getElementById('inScadenza').value;
+  if (!nome || !scadenza) { shake(document.querySelector('.form-card')); return; }
+
+  const user = auth.currentUser;
+  if (!user) return;
+
+  setStatus('syncing', 'Salvo...');
   try {
-    const res = await driveReq(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${FNAME}'&fields=files(id)`);
-    if (res.files?.length) {
-      fileId = res.files[0].id;
-      const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      medicinali = await r.json();
-    } else {
-      medicinali = [];
-      await createFile();
-    }
-    setStatus('connected', 'Drive ✓');
-    render();
+    await addDoc(collection(db, 'users', user.uid, 'medicinali'), {
+      nome,
+      categoria: document.getElementById('inCategoria').value,
+      scadenza,
+      quantita: document.getElementById('inQuantita').value.trim(),
+      note: document.getElementById('inNote').value.trim(),
+      createdAt: Date.now()
+    });
+    setStatus('connected', 'Firebase ✓');
+    showToast('✓ Medicinale aggiunto');
+    ['inNome','inScadenza','inQuantita','inNote'].forEach(id => document.getElementById(id).value = '');
   } catch(e) {
     console.error(e);
     setStatus('', 'Errore');
   }
-}
+};
 
-async function driveReq(url, opts = {}) {
-  const r = await fetch(url, {
-    ...opts,
-    headers: { Authorization: `Bearer ${token}`, ...(opts.headers||{}) }
-  });
-  if (!r.ok) throw new Error(r.status);
-  return r.json();
-}
-
-async function createFile() {
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify({ name: FNAME, parents: ['appDataFolder'] })], { type: 'application/json' }));
-  form.append('file', new Blob([JSON.stringify([])], { type: 'application/json' }));
-  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-    method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form
-  });
-  fileId = (await r.json()).id;
-}
-
-async function saveDrive() {
-  if (!token || !fileId) return;
-  setStatus('syncing', 'Salvo...');
+window.elimina = async (id) => {
+  const user = auth.currentUser;
+  if (!user) return;
+  setStatus('syncing', 'Elimino...');
   try {
-    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(medicinali)
-    });
-    setStatus('connected', 'Drive ✓');
-    const t = document.getElementById('syncToast');
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
+    await deleteDoc(doc(db, 'users', user.uid, 'medicinali', id));
+    setStatus('connected', 'Firebase ✓');
+    showToast('✓ Eliminato');
   } catch(e) {
-    setStatus('', 'Errore salvataggio');
+    console.error(e);
+    setStatus('', 'Errore');
   }
-}
-
-function scheduleSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveDrive, 800);
-}
+};
 
 // ---- HELPERS ----
 function getStatus(s) {
@@ -362,17 +356,47 @@ function fmtDate(s) {
   const [y,m] = s.split('-');
   return ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'][+m-1]+' '+y;
 }
-function icon(c) {
+function catIcon(c) {
   return {Analgesico:'🩹',Antibiotico:'💉',Antinfiammatorio:'🔥',Antiistaminico:'🌿',
     Gastrointestinale:'🫀','Vitamina/Integratore':'💊','Collirio/Nasale':'👁','Cerotti/Bende':'🩹',Altro:'📦'}[c]||'💊';
 }
+function setStatus(cls, txt) {
+  const el = document.getElementById('dbStatus');
+  el.className = 'db-status ' + cls;
+  document.getElementById('dbStatusText').textContent = txt;
+}
+function showToast(msg) {
+  const t = document.getElementById('syncToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+function shake(el) {
+  el.style.animation = 'none'; el.offsetHeight;
+  el.style.animation = 'shake .3s ease';
+  el.addEventListener('animationend', () => el.style.animation = '', { once: true });
+}
+function showIOSHint() {
+  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  if (isIOS && !window.navigator.standalone) {
+    document.getElementById('installText').textContent = '📲 Tocca ↑ e poi "Aggiungi a schermata Home" per installare l\'app';
+    document.getElementById('installBanner').style.display = 'flex';
+  }
+}
 
 // ---- RENDER ----
+window.setFilter = (f, btn) => {
+  filtro = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+};
+
 function render() {
   const lista = document.getElementById('lista');
-  let items = medicinali.filter(m => filtro==='tutti' || getStatus(m.scadenza)===filtro);
+  let items = medicinali.filter(m => filtro === 'tutti' || getStatus(m.scadenza) === filtro);
   items.sort((a,b) => {
-    const o={exp:0,warn:1,ok:2};
+    const o = {exp:0,warn:1,ok:2};
     const d = o[getStatus(a.scadenza)] - o[getStatus(b.scadenza)];
     return d || a.scadenza.localeCompare(b.scadenza);
   });
@@ -386,7 +410,7 @@ function render() {
           <div class="med-info">
             <div class="med-name">${m.nome}</div>
             <div class="med-meta">
-              <span>${icon(m.categoria)} ${m.categoria}</span>
+              <span>${catIcon(m.categoria)} ${m.categoria}</span>
               <span>📅 ${fmtDate(m.scadenza)}</span>
               ${m.quantita ? `<span>📦 ${m.quantita}</span>` : ''}
               ${badge(s)}
@@ -398,13 +422,13 @@ function render() {
       }).join('');
 
   document.getElementById('statTotale').textContent = medicinali.length;
-  document.getElementById('statScaduti').textContent = medicinali.filter(m=>getStatus(m.scadenza)==='exp').length;
-  document.getElementById('statWarn').textContent = medicinali.filter(m=>getStatus(m.scadenza)==='warn').length;
+  document.getElementById('statScaduti').textContent = medicinali.filter(m => getStatus(m.scadenza) === 'exp').length;
+  document.getElementById('statWarn').textContent = medicinali.filter(m => getStatus(m.scadenza) === 'warn').length;
 
-  const sc = medicinali.filter(m=>getStatus(m.scadenza)==='exp').length;
-  const wa = medicinali.filter(m=>getStatus(m.scadenza)==='warn').length;
+  const sc = medicinali.filter(m => getStatus(m.scadenza) === 'exp').length;
+  const wa = medicinali.filter(m => getStatus(m.scadenza) === 'warn').length;
   const banner = document.getElementById('alertBanner');
-  if (sc||wa) {
+  if (sc || wa) {
     const p = [];
     if (sc) p.push(`${sc} medicinale${sc>1?'i':''} scadut${sc>1?'i':'o'}`);
     if (wa) p.push(`${wa} in scadenza nei prossimi 3 mesi`);
@@ -413,71 +437,10 @@ function render() {
   } else banner.style.display = 'none';
 }
 
-// ---- ACTIONS ----
-function aggiungi() {
-  const nome = document.getElementById('inNome').value.trim();
-  const scadenza = document.getElementById('inScadenza').value;
-  if (!nome||!scadenza) { shake(document.querySelector('.form-card')); return; }
-  medicinali.push({
-    id: Date.now().toString(),
-    nome,
-    categoria: document.getElementById('inCategoria').value,
-    scadenza,
-    quantita: document.getElementById('inQuantita').value.trim(),
-    note: document.getElementById('inNote').value.trim()
-  });
-  scheduleSave(); render();
-  ['inNome','inScadenza','inQuantita','inNote'].forEach(id => document.getElementById(id).value = '');
+// ---- SERVICE WORKER ----
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(console.error);
 }
-
-function elimina(id) {
-  medicinali = medicinali.filter(m => m.id !== id);
-  scheduleSave(); render();
-}
-
-function setFilter(f, btn) {
-  filtro = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  render();
-}
-
-function shake(el) {
-  el.style.animation = 'none'; el.offsetHeight;
-  el.style.animation = 'shake .3s ease';
-  el.addEventListener('animationend', () => el.style.animation = '', { once: true });
-}
-
-// ---- INIT ----
-async function init() {
-  // Controlla se torniamo da Google con il token nell'hash
-  let t = checkRedirectToken();
-  if (t) {
-    sessionStorage.setItem('farm_token', t);
-    token = t;
-  } else {
-    token = sessionStorage.getItem('farm_token');
-  }
-
-  if (token) {
-    document.getElementById('loginOverlay').style.display = 'none';
-    document.getElementById('btnAdd').disabled = false;
-    setStatus('syncing', 'Caricamento...');
-    await loadDrive();
-
-    // Hint installazione iOS
-    const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-    const isStandalone = window.navigator.standalone;
-    if (isIOS && !isStandalone) {
-      document.getElementById('installText').textContent = '📲 Tocca ↑ e poi "Aggiungi a schermata Home" per installare l\'app';
-      document.getElementById('installBanner').style.display = 'flex';
-    }
-  } else {
-    document.getElementById('loginOverlay').style.display = 'flex';
-  }
-}
-
-init();
 </script>
 </body>
 </html>
