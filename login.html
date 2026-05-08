@@ -3,101 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login — Farmacia di Casa</title>
+<title>Accedi — Farmacia di Casa</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root { --cream:#F7F3EE; --ink:#1A1612; --ink-muted:#8C7D70; --border:#E0D6CC; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family:'DM Sans',sans-serif; background:var(--ink);
-    min-height:100vh; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:1.2rem; padding:2rem;
-  }
-  h2 { font-family:'DM Serif Display',serif; font-size:2rem; color:var(--cream); }
-  p { color:var(--ink-muted); font-size:.9rem; text-align:center; max-width:300px; line-height:1.6; }
-  .btn-google {
-    display:flex; align-items:center; gap:.8rem; padding:.9rem 2rem;
-    background:var(--cream); color:var(--ink); border:none; border-radius:2px;
-    font-family:'DM Sans',sans-serif; font-size:.95rem; font-weight:600; cursor:pointer;
-  }
-  .btn-google svg { width:20px; height:20px; }
-  .btn-google:disabled { opacity:.5; }
-  #msg { font-size:.85rem; color:var(--ink-muted); min-height:1.2rem; }
+  :root{--cream:#F7F3EE;--ink:#1A1612;--ink-muted:#8C7D70;--sage:#5B7B5E;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;padding:2rem;}
+  h2{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--cream);}
+  p{color:var(--ink-muted);font-size:.9rem;text-align:center;max-width:300px;line-height:1.7;}
+  .btn-google{display:flex;align-items:center;gap:.8rem;padding:.9rem 2rem;background:var(--cream);color:var(--ink);border:none;border-radius:2px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;}
+  .btn-google:disabled{opacity:.5;}
+  .btn-google svg{width:20px;height:20px;}
+  #msg{font-size:.85rem;color:var(--ink-muted);min-height:1.2rem;text-align:center;}
+  .success{color:#8AAE8D;font-size:1rem;text-align:center;}
+  .steps{background:#1e1c18;border-radius:4px;padding:1.2rem 1.5rem;max-width:320px;width:100%;margin-top:.5rem;}
+  .steps h3{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:.8rem;}
+  .step{display:flex;gap:.8rem;align-items:flex-start;margin-bottom:.6rem;font-size:.85rem;color:#aaa;}
+  .step:last-child{margin-bottom:0;}
+  .step-num{background:#333;color:var(--cream);width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;flex-shrink:0;margin-top:.1rem;}
 </style>
 </head>
 <body>
-<div style="font-size:3rem">⚕</div>
-<h2>Farmacia di Casa</h2>
-<p id="msg">Accedi per continuare</p>
-<button class="btn-google" id="btnLogin">
-  <svg viewBox="0 0 48 48">
-    <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.8 2.5 30.2 0 24 0 14.8 0 6.9 5.4 3 13.3l7.9 6.1C12.7 13.2 17.9 9.5 24 9.5z"/>
-    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.9-9.9 6.9-17z"/>
-    <path fill="#FBBC05" d="M10.9 28.6A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.4 13.3A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l8.3-6.1z"/>
-    <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.1 0-11.3-3.7-13.1-9l-7.9 6.1C6.9 42.6 14.8 48 24 48z"/>
-  </svg>
-  Accedi con Google
-</button>
+  <div style="font-size:3rem">⚕</div>
+  <h2>Farmacia di Casa</h2>
+  <p id="msg">Accedi una volta sola — poi potrai usare l'app installata sulla home screen.</p>
+  <button class="btn-google" id="btnLogin" onclick="doLogin()">
+    <svg viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.8 2.5 30.2 0 24 0 14.8 0 6.9 5.4 3 13.3l7.9 6.1C12.7 13.2 17.9 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 6.9-9.9 6.9-17z"/>
+      <path fill="#FBBC05" d="M10.9 28.6A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.4 13.3A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l8.3-6.1z"/>
+      <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.1 0-11.3-3.7-13.1-9l-7.9 6.1C6.9 42.6 14.8 48 24 48z"/>
+    </svg>
+    Accedi con Google
+  </button>
+  <div id="postLogin" style="display:none;width:100%;max-width:320px;">
+    <p class="success">✓ Accesso effettuato!</p>
+    <div class="steps" style="margin-top:1rem;">
+      <h3>Ora installa l'app</h3>
+      <div class="step"><div class="step-num">1</div><span>Tocca il pulsante <strong>Condividi</strong> ↑ in basso</span></div>
+      <div class="step"><div class="step-num">2</div><span>Seleziona <strong>"Aggiungi a schermata Home"</strong></span></div>
+      <div class="step"><div class="step-num">3</div><span>Tocca <strong>Aggiungi</strong> — l'app apparirà nella home</span></div>
+      <div class="step"><div class="step-num">4</div><span>Apri l'app dalla home — sarai già loggato ✓</span></div>
+    </div>
+  </div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const app = initializeApp({
-  apiKey: "AIzaSyA90AnXrXPimDjwF6EGLppGW5SnSQnVxvY",
-  authDomain: "farmacia-di-casa-5020f.firebaseapp.com",
-  projectId: "farmacia-di-casa-5020f",
-  storageBucket: "farmacia-di-casa-5020f.firebasestorage.app",
-  messagingSenderId: "421483950970",
-  appId: "1:421483950970:web:7bbf5952daf0034364dcc3"
+  apiKey:"AIzaSyA90AnXrXPimDjwF6EGLppGW5SnSQnVxvY",
+  authDomain:"farmacia-di-casa-5020f.firebaseapp.com",
+  projectId:"farmacia-di-casa-5020f",
+  storageBucket:"farmacia-di-casa-5020f.firebasestorage.app",
+  messagingSenderId:"421483950970",
+  appId:"1:421483950970:web:7bbf5952daf0034364dcc3"
 });
 
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-const APP_URL = 'https://wowak83-coder.github.io/farmacia/';
-const msg = document.getElementById('msg');
-const btn = document.getElementById('btnLogin');
 
-// Controlla se torniamo da un redirect
-getRedirectResult(auth).then(result => {
-  if (result?.user) handleUser(result.user);
-}).catch(e => {
-  msg.textContent = 'Errore: ' + e.message;
+// Controlla se già loggato
+onAuthStateChanged(auth, user => {
+  if (user) showSuccess();
 });
 
-btn.onclick = async () => {
+// Controlla redirect result
+getRedirectResult(auth).then(r => { if (r?.user) showSuccess(); }).catch(console.error);
+
+window.doLogin = async () => {
+  const btn = document.getElementById('btnLogin');
   btn.disabled = true;
-  msg.textContent = 'Accesso in corso...';
+  document.getElementById('msg').textContent = 'Accesso in corso...';
   try {
-    // Prova prima con popup
-    const result = await signInWithPopup(auth, provider);
-    handleUser(result.user);
+    await signInWithPopup(auth, provider);
+    showSuccess();
   } catch(e) {
-    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
-      // Fallback a redirect
-      msg.textContent = 'Reindirizzamento...';
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+      document.getElementById('msg').textContent = 'Reindirizzamento a Google...';
       await signInWithRedirect(auth, provider);
     } else {
-      msg.textContent = 'Errore: ' + e.message;
+      document.getElementById('msg').textContent = 'Errore: ' + e.message;
       btn.disabled = false;
     }
   }
 };
 
-function handleUser(user) {
-  // Ottieni il token ID e passalo all'app tramite localStorage
-  user.getIdToken().then(token => {
-    // Salva uid e token in localStorage così la PWA li legge
-    localStorage.setItem('farm_uid', user.uid);
-    localStorage.setItem('farm_token', token);
-    localStorage.setItem('farm_email', user.email);
-    localStorage.setItem('farm_name', user.displayName || '');
-    msg.textContent = '✓ Accesso effettuato! Torno all\'app...';
-    btn.style.display = 'none';
-    // Torna alla PWA
-    setTimeout(() => { window.location.href = APP_URL; }, 800);
-  });
+function showSuccess() {
+  document.getElementById('btnLogin').style.display = 'none';
+  document.getElementById('msg').style.display = 'none';
+  document.getElementById('postLogin').style.display = 'block';
 }
 </script>
 </body>
