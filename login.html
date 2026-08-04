@@ -40,18 +40,16 @@
     <p class="success">✓ Accesso effettuato!</p>
     <div class="steps" style="margin-top:1rem;">
       <h3>Ora installa l'app</h3>
-      <div class="step"><div class="step-num">1</div><span>Tocca il pulsante <strong>Condividi</strong> ↑ in basso</span></div>
+      <div class="step"><div class="step-num">1</div><span>Tocca il pulsante <strong>Condividi ↑</strong> in basso</span></div>
       <div class="step"><div class="step-num">2</div><span>Seleziona <strong>"Aggiungi a schermata Home"</strong></span></div>
-      <div class="step"><div class="step-num">3</div><span>Tocca <strong>Aggiungi</strong> — l'app apparirà nella home</span></div>
+      <div class="step"><div class="step-num">3</div><span>Tocca <strong>Aggiungi</strong></span></div>
       <div class="step"><div class="step-num">4</div><span>Apri l'app dalla home — sarai già loggato ✓</span></div>
     </div>
   </div>
-
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-
 const app = initializeApp({
   apiKey:"AIzaSyA90AnXrXPimDjwF6EGLppGW5SnSQnVxvY",
   authDomain:"farmacia-di-casa-5020f.firebaseapp.com",
@@ -60,41 +58,22 @@ const app = initializeApp({
   messagingSenderId:"421483950970",
   appId:"1:421483950970:web:7bbf5952daf0034364dcc3"
 });
-
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-
-// Controlla se già loggato
-onAuthStateChanged(auth, user => {
-  if (user) showSuccess();
-});
-
-// Controlla redirect result
-getRedirectResult(auth).then(r => { if (r?.user) showSuccess(); }).catch(console.error);
-
+onAuthStateChanged(auth, user => { if(user) showSuccess(); });
+getRedirectResult(auth).then(r=>{ if(r?.user) showSuccess(); }).catch(console.error);
 window.doLogin = async () => {
-  const btn = document.getElementById('btnLogin');
-  btn.disabled = true;
-  document.getElementById('msg').textContent = 'Accesso in corso...';
-  try {
-    await signInWithPopup(auth, provider);
-    showSuccess();
-  } catch(e) {
-    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
-      document.getElementById('msg').textContent = 'Reindirizzamento a Google...';
-      await signInWithRedirect(auth, provider);
-    } else {
-      document.getElementById('msg').textContent = 'Errore: ' + e.message;
-      btn.disabled = false;
-    }
+  const btn=document.getElementById('btnLogin');btn.disabled=true;
+  document.getElementById('msg').textContent='Accesso in corso...';
+  try{ await signInWithPopup(auth,provider);showSuccess(); }
+  catch(e){
+    if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'){
+      document.getElementById('msg').textContent='Reindirizzamento...';
+      await signInWithRedirect(auth,provider);
+    }else{document.getElementById('msg').textContent='Errore: '+e.message;btn.disabled=false;}
   }
 };
-
-function showSuccess() {
-  document.getElementById('btnLogin').style.display = 'none';
-  document.getElementById('msg').style.display = 'none';
-  document.getElementById('postLogin').style.display = 'block';
-}
+function showSuccess(){document.getElementById('btnLogin').style.display='none';document.getElementById('msg').style.display='none';document.getElementById('postLogin').style.display='block';}
 </script>
 </body>
 </html>
