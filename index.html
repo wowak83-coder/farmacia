@@ -144,6 +144,17 @@ input[type="time"]{font-size:.9rem;}
 
 .alert-banner{background:var(--amber-light);border:1px solid #F0C060;border-left:4px solid var(--amber);border-radius:2px;padding:.8rem 1rem;margin-bottom:1.2rem;display:none;align-items:center;gap:.6rem;font-size:.85rem;color:#7A5A10;}
 
+/* SCORTE BANNER */
+.scorte-banner{background:var(--ink);border-radius:2px;padding:1rem 1.2rem;margin-bottom:1.2rem;display:none;}
+.scorte-banner-title{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--cream);margin-bottom:.7rem;display:flex;align-items:center;justify-content:space-between;}
+.scorte-banner-title button{background:none;border:none;color:var(--ink-muted);font-size:1rem;cursor:pointer;}
+.scorte-row{display:flex;align-items:center;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid #2a2520;gap:.5rem;}
+.scorte-row:last-child{border-bottom:none;}
+.scorte-nome{font-size:.85rem;color:var(--cream);}
+.scorte-giorni{font-size:.75rem;font-weight:600;padding:.2rem .6rem;border-radius:2px;}
+.scorte-crit{background:var(--rust-light);color:var(--rust);}
+.scorte-warn{background:var(--amber-light);color:var(--amber);}
+
 .empty-state{text-align:center;padding:4rem 1rem;}
 .empty-icon{font-size:3rem;margin-bottom:1rem;opacity:.4;}
 .empty-state p{font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--ink-soft);}
@@ -213,6 +224,15 @@ input[type="time"]{font-size:.9rem;}
 <!-- ARMADIETTO -->
 <div class="page active" id="pageArmadietto">
   <div class="page-title">Armadietto</div>
+  <!-- Banner scorte in esaurimento -->
+  <div class="scorte-banner" id="scorteProattivoBanner">
+    <div class="scorte-banner-title">
+      <span>📦 Scorte in esaurimento</span>
+      <button onclick="document.getElementById('scorteProattivoBanner').style.display='none'">✕</button>
+    </div>
+    <div id="scorteProattivoList"></div>
+  </div>
+
   <div class="alert-banner" id="alertBanner">⚠️ <strong id="alertText"></strong></div>
   <div class="filters" id="armFilters">
     <button class="filter-btn active" onclick="setArmFilter('tutti',this)">Tutti</button>
@@ -298,7 +318,10 @@ input[type="time"]{font-size:.9rem;}
           </select>
         </div>
       </div>
-      <div class="field"><label>Note</label><input type="text" id="mNote" placeholder="opzionale"/></div>
+      <div class="form-row">
+        <div class="field"><label>Note</label><input type="text" id="mNote" placeholder="opzionale"/></div>
+        <div class="field"><label>Avvisami entro (giorni)</label><input type="number" id="mSoglia" value="7" min="1" max="60" placeholder="7"/></div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary btn-full" onclick="salvaMedicinale()">Salva</button>
@@ -512,6 +535,21 @@ function catIcon(c){ return{Analgesico:'🩹',Antibiotico:'💉',Antinfiammatori
 function shake(el){ el.style.animation='none';el.offsetHeight;el.style.animation='shake .3s ease';el.addEventListener('animationend',()=>el.style.animation='',{once:true}); }
 function consumoGiornaliero(medId){ const oggi=new Date().toISOString().split('T')[0];let tot=0;terapie.forEach(t=>{if(!t.attiva)return;if(!t.cronica&&t.fine&&t.fine<oggi)return;(t.medicinali||[]).forEach(m=>{if(m.medId===medId)tot+=(parseFloat(m.posDosi)||0)*(parseFloat(m.posQxDose)||0);});});return tot; }
 function giorniScorte(med){ const c=consumoGiornaliero(med.id);if(!c||!med.quantita)return null;return Math.floor(parseFloat(med.quantita)/c); }
+function sogliaMed(med){ return med.soglia||7; }
+function isScorteBassa(med){ const g=giorniScorte(med);return g!==null&&g<=sogliaMed(med); }
+
+function renderScorteBanner(){
+  const inEsaurimento=medicinali.filter(m=>isScorteBassa(m));
+  const banner=document.getElementById('scorteProattivoBanner');
+  if(!inEsaurimento.length){banner.style.display='none';return;}
+  document.getElementById('scorteProattivoList').innerHTML=inEsaurimento.map(m=>{
+    const g=giorniScorte(m);
+    const cls=g<=2?'scorte-crit':'scorte-warn';
+    const txt=g===0?'Terminato oggi':g===1?'Termina domani':`Termina tra ${g} giorni`;
+    return `<div class="scorte-row"><span class="scorte-nome">💊 ${m.nome}</span><span class="scorte-giorni ${cls}">${txt}</span></div>`;
+  }).join('');
+  banner.style.display='block';
+}
 
 // ---- NAV ----
 window.showPage = name => {
@@ -539,15 +577,16 @@ window.selectColor = c => { selectedColor=c; renderEmojiColorPickers(); };
 // ---- RENDER ARMADIETTO ----
 function renderArmadietto() {
   const lista=document.getElementById('listaMedicinali');
+  renderScorteBanner();
   let items=medicinali.filter(m=>{
     const s=getScadStatus(m.scadenza);
     if(armFilter==='tutti')return true;
-    if(armFilter==='scorte'){const g=giorniScorte(m);return g!==null&&g<=14;}
+    if(armFilter==='scorte')return isScorteBassa(m);
     return s===armFilter;
   });
   const exp=medicinali.filter(m=>getScadStatus(m.scadenza)==='exp').length;
   const warn=medicinali.filter(m=>getScadStatus(m.scadenza)==='warn').length;
-  const sb=medicinali.filter(m=>{const g=giorniScorte(m);return g!==null&&g<=14;}).length;
+  const sb=medicinali.filter(m=>isScorteBassa(m)).length;
   const banner=document.getElementById('alertBanner');
   const parts=[];
   if(exp)parts.push(`${exp} scadut${exp>1?'i':'o'}`);
@@ -619,9 +658,10 @@ window.salvaMedicinale = async () => {
   if(!nome||!uid||!currentProfiloId){shake(document.querySelector('#modalMed .modal'));return;}
   setStatus('syncing','Salvo...');
   try{
-    await addDoc(medCol(),{nome,scadenza:document.getElementById('mScadenza').value,categoria:document.getElementById('mCategoria').value,quantita:parseFloat(document.getElementById('mQuantita').value)||null,unita:document.getElementById('mUnita').value,note:document.getElementById('mNote').value.trim(),createdAt:Date.now()});
+    await addDoc(medCol(),{nome,scadenza:document.getElementById('mScadenza').value,categoria:document.getElementById('mCategoria').value,quantita:parseFloat(document.getElementById('mQuantita').value)||null,unita:document.getElementById('mUnita').value,note:document.getElementById('mNote').value.trim(),soglia:parseInt(document.getElementById('mSoglia').value)||7,createdAt:Date.now()});
     setStatus('connected','Firebase ✓');showToast('✓ Medicinale aggiunto');closeModal('modalMed');
     ['mNome','mScadenza','mQuantita','mNote'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('mSoglia').value='7';
   }catch(e){console.error(e);setStatus('','Errore');}
 };
 window.eliminaMed = async id => { if(!uid||!currentProfiloId)return;await deleteDoc(doc(db,profiloPath(),'medicinali',id));showToast('✓ Eliminato'); };
