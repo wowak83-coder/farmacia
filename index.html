@@ -597,15 +597,46 @@ function renderArmadietto() {
   if(!items.length){lista.innerHTML=`<div class="empty-state"><div class="empty-icon">💊</div><p>Nessun medicinale</p><small>Tocca + per aggiungerne uno</small></div>`;return;}
   lista.innerHTML=items.map(m=>{
     const s=getScadStatus(m.scadenza);
-    const giorni=giorniScorte(m);const consumo=consumoGiornaliero(m.id);
+    const giorni=giorniScorte(m);
+    const consumo=consumoGiornaliero(m.id);
+
+    // Trova le terapie attive che usano questo medicinale
+    const oggi=new Date().toISOString().split('T')[0];
+    const terapieAttive=terapie.filter(t=>{
+      if(!t.attiva) return false;
+      if(!t.cronica&&t.fine&&t.fine<oggi) return false;
+      return (t.medicinali||[]).some(tm=>tm.medId===m.id);
+    });
+
+    // HTML terapie collegate
+    let terapieHtml='';
+    if(terapieAttive.length){
+      terapieHtml=`<div style="font-size:.72rem;color:var(--blue);margin-top:.3rem">📋 ${terapieAttive.map(t=>t.nome).join(', ')}</div>`;
+    }
+
+    // HTML scorte
     let stockHtml='';
-    if(m.quantita&&consumo>0){const pct=Math.min(100,Math.round((giorni/30)*100));const cls=giorni<=3?'sf-crit':giorni<=14?'sf-warn':'sf-ok';stockHtml=`<div class="stock-wrap"><div class="stock-lbl"><span>📦 ${m.quantita} ${m.unita||''}</span><span>${giorni} giorni rimasti</span></div><div class="stock-bar"><div class="stock-fill ${cls}" style="width:${pct}%"></div></div></div>`;}
-    else if(m.quantita){stockHtml=`<div style="font-size:.72rem;color:var(--ink-muted);margin-top:.3rem">📦 ${m.quantita} ${m.unita||''}</div>`;}
+    if(m.quantita&&consumo>0){
+      const pct=Math.min(100,Math.round((giorni/30)*100));
+      const cls=giorni<=3?'sf-crit':giorni<=sogliaMed(m)?'sf-warn':'sf-ok';
+      const txtGiorni=giorni===0?'Termina oggi':giorni===1?'Termina domani':`Esaurimento in ${giorni} giorni`;
+      stockHtml=`<div class="stock-wrap">
+        <div class="stock-lbl">
+          <span>📦 ${m.quantita} ${m.unita||''} · ${consumo} ${m.unita||''}/giorno</span>
+          <span style="font-weight:600;color:${giorni<=3?'var(--rust)':giorni<=sogliaMed(m)?'var(--amber)':'var(--sage)'}">${txtGiorni}</span>
+        </div>
+        <div class="stock-bar"><div class="stock-fill ${cls}" style="width:${pct}%"></div></div>
+      </div>`;
+    } else if(m.quantita){
+      stockHtml=`<div style="font-size:.72rem;color:var(--ink-muted);margin-top:.3rem">📦 ${m.quantita} ${m.unita||''}${!consumo?' — non in nessuna terapia attiva':''}</div>`;
+    }
+
     return `<div class="medicine-item">
       <div class="status-bar s-${s}"></div>
       <div style="min-width:0">
         <div class="med-name">${m.nome}</div>
         <div class="med-meta"><span>${catIcon(m.categoria)} ${m.categoria}</span><span>📅 ${fmtDate(m.scadenza)}</span>${s==='exp'?'<span class="badge badge-exp">Scaduto</span>':s==='warn'?'<span class="badge badge-warn">In scadenza</span>':'<span class="badge badge-ok">Valido</span>'}</div>
+        ${terapieHtml}
         ${stockHtml}
         ${m.note?`<div style="font-size:.72rem;color:var(--ink-muted);margin-top:.25rem;font-style:italic">${m.note}</div>`:''}
       </div>
