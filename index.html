@@ -330,6 +330,25 @@ input[type="time"]{font-size:.9rem;}
   </div>
 </div>
 
+<!-- MODAL: AGGIORNA SCORTE -->
+<div class="modal-overlay" id="modalScorte" style="display:none" onclick="closeModalOutside(event,'modalScorte')">
+  <div class="modal">
+    <div class="modal-title">Aggiorna scorte</div>
+    <p id="scorteModalNome" style="font-family:'DM Serif Display',serif;font-size:1rem;color:var(--ink-soft);margin-bottom:1rem"></p>
+    <div class="form-col">
+      <div class="field">
+        <label>Nuova quantità disponibile</label>
+        <input type="number" id="scorteNuovaQta" min="0" step="0.5" placeholder="es. 30"/>
+      </div>
+      <div style="font-size:.8rem;color:var(--ink-muted)" id="scorteInfo"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-full" onclick="salvaAggiornaScorte()">Aggiorna</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalScorte')">Annulla</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: TERAPIA -->
 <div class="modal-overlay" id="modalTerapia" style="display:none" onclick="closeModalOutside(event,'modalTerapia')">
   <div class="modal">
@@ -534,7 +553,41 @@ function fmtDateFull(s){ if(!s)return '—';const[y,m,d]=s.split('-');return`${d
 function catIcon(c){ return{Analgesico:'🩹',Antibiotico:'💉',Antinfiammatorio:'🔥',Antiistaminico:'🌿',Gastrointestinale:'🫀','Vitamina/Integratore':'💊','Collirio/Nasale':'👁','Cerotti/Bende':'🩹',Altro:'📦'}[c]||'💊'; }
 function shake(el){ el.style.animation='none';el.offsetHeight;el.style.animation='shake .3s ease';el.addEventListener('animationend',()=>el.style.animation='',{once:true}); }
 function consumoGiornaliero(medId){ const oggi=new Date().toISOString().split('T')[0];let tot=0;terapie.forEach(t=>{if(!t.attiva)return;if(!t.cronica&&t.fine&&t.fine<oggi)return;(t.medicinali||[]).forEach(m=>{if(m.medId===medId)tot+=(parseFloat(m.posDosi)||0)*(parseFloat(m.posQxDose)||0);});});return tot; }
-function giorniScorte(med){ const c=consumoGiornaliero(med.id);if(!c||!med.quantita)return null;return Math.floor(parseFloat(med.quantita)/c); }
+
+// Calcola le unità già consumate dalla data di inizio terapia (o ultimo aggiornamento scorte) ad oggi
+function unitaConsumateFinora(medId){
+  const oggi=new Date();
+  const oggiStr=oggi.toISOString().split('T')[0];
+  const med=medicinali.find(m=>m.id===medId);
+  let tot=0;
+  terapie.forEach(t=>{
+    if(!t.attiva) return;
+    if(!t.cronica&&t.fine&&t.fine<oggiStr) return;
+    if(!t.inizio) return;
+    // Usa dataAggiornaScorte se presente e più recente dell'inizio terapia
+    const dataRef = med?.dataAggiornaScorte && med.dataAggiornaScorte>t.inizio
+      ? new Date(med.dataAggiornaScorte)
+      : new Date(t.inizio);
+    if(dataRef>oggi) return;
+    const giorniTrascorsi=Math.floor((oggi-dataRef)/86400000);
+    (t.medicinali||[]).forEach(m=>{
+      if(m.medId===medId){
+        const consumoGiorno=(parseFloat(m.posDosi)||0)*(parseFloat(m.posQxDose)||0);
+        tot+=consumoGiorno*giorniTrascorsi;
+      }
+    });
+  });
+  return tot;
+}
+
+// Scorta reale = scorta inserita - unità consumate dalla data inizio terapia
+function scorteReali(med){
+  if(!med.quantita) return null;
+  const consumate=unitaConsumateFinora(med.id);
+  return Math.max(0, parseFloat(med.quantita)-consumate);
+}
+
+function giorniScorte(med){ const c=consumoGiornaliero(med.id);const s=scorteReali(med);if(!c||s===null)return null;return Math.floor(s/c); }
 function sogliaMed(med){ return med.soglia||7; }
 function isScorteBassa(med){ const g=giorniScorte(med);return g!==null&&g<=sogliaMed(med); }
 
@@ -617,12 +670,13 @@ function renderArmadietto() {
     // HTML scorte
     let stockHtml='';
     if(m.quantita&&consumo>0){
+      const reali=scorteReali(m);
       const pct=Math.min(100,Math.round((giorni/30)*100));
       const cls=giorni<=3?'sf-crit':giorni<=sogliaMed(m)?'sf-warn':'sf-ok';
       const txtGiorni=giorni===0?'Termina oggi':giorni===1?'Termina domani':`Esaurimento in ${giorni} giorni`;
       stockHtml=`<div class="stock-wrap">
         <div class="stock-lbl">
-          <span>📦 ${m.quantita} ${m.unita||''} · ${consumo} ${m.unita||''}/giorno</span>
+          <span>📦 ${reali.toFixed(1)} ${m.unita||''} rimaste · ${consumo} ${m.unita||''}/giorno</span>
           <span style="font-weight:600;color:${giorni<=3?'var(--rust)':giorni<=sogliaMed(m)?'var(--amber)':'var(--sage)'}">${txtGiorni}</span>
         </div>
         <div class="stock-bar"><div class="stock-fill ${cls}" style="width:${pct}%"></div></div>
@@ -640,7 +694,10 @@ function renderArmadietto() {
         ${stockHtml}
         ${m.note?`<div style="font-size:.72rem;color:var(--ink-muted);margin-top:.25rem;font-style:italic">${m.note}</div>`:''}
       </div>
-      <button class="btn-danger" onclick="eliminaMed('${m.id}')">✕</button>
+      <div style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end;flex-shrink:0">
+        ${m.quantita?`<button class="btn btn-ghost btn-sm" onclick="apriAggiornaScorte('${m.id}','${m.nome.replace(/'/g,"\\'")}',${m.quantita},'${m.unita||''}')">📦</button>`:''}
+        <button class="btn-danger" onclick="eliminaMed('${m.id}')">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -696,6 +753,44 @@ window.salvaMedicinale = async () => {
   }catch(e){console.error(e);setStatus('','Errore');}
 };
 window.eliminaMed = async id => { if(!uid||!currentProfiloId)return;await deleteDoc(doc(db,profiloPath(),'medicinali',id));showToast('✓ Eliminato'); };
+
+let aggiornaScorteMedId = null;
+window.apriAggiornaScorte = (id, nome, qtaOriginale, unita) => {
+  aggiornaScorteMedId = id;
+  document.getElementById('scorteModalNome').textContent = nome;
+  document.getElementById('scorteNuovaQta').value = '';
+  document.getElementById('scorteNuovaQta').placeholder = `es. ${qtaOriginale}`;
+  // Mostra scorte attuali calcolate
+  const med = medicinali.find(m=>m.id===id);
+  if(med){
+    const reali = scorteReali(med);
+    const consumo = consumoGiornaliero(id);
+    const info = reali!==null
+      ? `Scorte attuali calcolate: ${reali.toFixed(1)} ${unita}${consumo?` · consumo ${consumo} ${unita}/giorno`:''}`
+      : `Quantità originale inserita: ${qtaOriginale} ${unita}`;
+    document.getElementById('scorteInfo').textContent = info;
+  }
+  openModal('modalScorte');
+};
+
+window.salvaAggiornaScorte = async () => {
+  const nuovaQta = parseFloat(document.getElementById('scorteNuovaQta').value);
+  if(isNaN(nuovaQta)||nuovaQta<0||!aggiornaScorteMedId||!uid||!currentProfiloId){
+    shake(document.querySelector('#modalScorte .modal')); return;
+  }
+  setStatus('syncing','Salvo...');
+  try{
+    // Salviamo la nuova quantità e resettiamo la data di riferimento a oggi
+    // così il calcolo dinamico riparte da oggi con la nuova scorta
+    await updateDoc(doc(db,profiloPath(),'medicinali',aggiornaScorteMedId),{
+      quantita: nuovaQta,
+      dataAggiornaScorte: new Date().toISOString().split('T')[0]
+    });
+    setStatus('connected','Firebase ✓');
+    showToast('✓ Scorte aggiornate');
+    closeModal('modalScorte');
+  }catch(e){console.error(e);setStatus('','Errore');}
+};
 
 // ---- TERAPIA FORM ----
 window.apriNuovaTerapia = () => {
