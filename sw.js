@@ -1,4 +1,4 @@
-const CACHE = 'farmacia-v3';
+const CACHE = 'farmacia-v4';
 const ASSETS = ['/farmacia/', '/farmacia/index.html', '/farmacia/manifest.json', '/farmacia/firebase-config.js'];
 
 // Alarms store: { key: "{nome}-{time}", nome, time, dettaglio }
