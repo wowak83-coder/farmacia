@@ -1,5 +1,5 @@
-const CACHE = 'farmacia-v2';
-const ASSETS = ['/farmacia/', '/farmacia/index.html', '/farmacia/manifest.json'];
+const CACHE = 'farmacia-v3';
+const ASSETS = ['/farmacia/', '/farmacia/index.html', '/farmacia/manifest.json', '/farmacia/firebase-config.js'];
 
 // Alarms store: { key: "{nome}-{time}", nome, time, dettaglio }
 let scheduledAlarms = {};

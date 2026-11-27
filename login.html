@@ -50,14 +50,8 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-const app = initializeApp({
-  apiKey:"AIzaSyA90AnXrXPimDjwF6EGLppGW5SnSQnVxvY",
-  authDomain:"farmacia-di-casa-5020f.firebaseapp.com",
-  projectId:"farmacia-di-casa-5020f",
-  storageBucket:"farmacia-di-casa-5020f.firebasestorage.app",
-  messagingSenderId:"421483950970",
-  appId:"1:421483950970:web:7bbf5952daf0034364dcc3"
-});
+import { firebaseConfig } from './firebase-config.js';
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 onAuthStateChanged(auth, user => { if(user) showSuccess(); });

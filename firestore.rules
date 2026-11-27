@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// Regole di sicurezza di Farmacia di Casa.
+// Struttura dei dati:
+//   users/{uid}/profili/{profiloId}
+//   users/{uid}/profili/{profiloId}/medicinali/{medId}
+//   users/{uid}/profili/{profiloId}/terapie/{terapiaId}
+// Ogni utente autenticato può leggere e scrivere SOLO sotto users/{suo uid}.
+// Tutto il resto del database è chiuso.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Limite di dimensione per i documenti scritti (difesa da abusi).
+    function sizeOk() {
+      return request.resource.data.size() <= 50;
+    }
+
+    match /users/{userId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && sizeOk();
+
+      match /profili/{profiloId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && sizeOk()
+          && request.resource.data.nome is string
+          && request.resource.data.nome.size() > 0
+          && request.resource.data.nome.size() <= 60;
+
+        match /medicinali/{medId} {
+          allow read, delete: if isOwner(userId);
+          allow create, update: if isOwner(userId) && sizeOk()
+            && request.resource.data.nome is string
+            && request.resource.data.nome.size() > 0
+            && request.resource.data.nome.size() <= 200
+            && (!('note' in request.resource.data)
+                || request.resource.data.note.size() <= 2000);
+        }
+
+        match /terapie/{terapiaId} {
+          allow read, delete: if isOwner(userId);
+          allow create, update: if isOwner(userId) && sizeOk()
+            && request.resource.data.nome is string
+            && request.resource.data.nome.size() > 0
+            && request.resource.data.nome.size() <= 200
+            && (!('note' in request.resource.data)
+                || request.resource.data.note.size() <= 2000)
+            && (!('medicinali' in request.resource.data)
+                || request.resource.data.medicinali.size() <= 50);
+        }
+      }
+    }
+
+    // Qualsiasi altro percorso: negato.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
