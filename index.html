@@ -381,15 +381,19 @@ input[type="time"]{font-size:.9rem;}
 </div>
 
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, getDocs, writeBatch }
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, getDocs, writeBatch }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { firebaseConfig } from './firebase-config.js';
+import { auth, db, isNative, LocalNotifications } from './firebase-init.js';
 
-const fbApp = initializeApp(firebaseConfig);
-const auth = getAuth(fbApp);
-const db   = getFirestore(fbApp);
+// Nell'app iOS il login si fa nella pagina locale, non in Chrome.
+if (isNative) {
+  document.getElementById('notLogged').innerHTML = `
+    <div style="font-size:3rem">⚕</div>
+    <h2>Farmacia di Casa</h2>
+    <p>Accedi per ritrovare i tuoi medicinali e le tue terapie.</p>
+    <a class="btn-chrome" href="login.html">Accedi</a>`;
+}
 
 // ---- CONSTANTS ----
 const EMOJIS = ['👤','👨','👩','👴','👵','👦','👧','🧔','👨‍⚕️','👩‍⚕️','🐱','🐶'];
@@ -424,6 +428,7 @@ onAuthStateChanged(auth, user => {
     initProfili();
     requestNotifPerm();
   } else {
+    if (isNative) { window.location.replace('login.html'); return; }
     uid = null;
     document.getElementById('notLogged').style.display = 'flex';
     setStatus('', '—');
@@ -438,6 +443,7 @@ async function initProfili() {
     query(collection(db, 'users', uid, 'profili'), orderBy('createdAt', 'asc')),
     async snap => {
       profili = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      riprogrammaNotificheNative();
 
       // Se non ci sono profili, crea "Io" di default
       if (profili.length === 0) {
@@ -547,7 +553,7 @@ function startListeners() {
   unsubMed = onSnapshot(query(medCol(), orderBy('nome','asc')),
     snap => { medicinali = snap.docs.map(d=>({id:d.id,...d.data()})); renderArmadietto(); });
   unsubTer = onSnapshot(query(terCol(), orderBy('createdAt','desc')),
-    snap => { terapie = snap.docs.map(d=>({id:d.id,...d.data()})); renderTerapie(); });
+    snap => { terapie = snap.docs.map(d=>({id:d.id,...d.data()})); renderTerapie(); riprogrammaNotificheNative(); });
 }
 function stopListeners() {
   if (unsubMed) { unsubMed(); unsubMed = null; }
@@ -556,14 +562,61 @@ function stopListeners() {
 
 // ---- NOTIFICATIONS ----
 async function requestNotifPerm() {
+  if (isNative) {
+    try {
+      const p = await LocalNotifications.checkPermissions();
+      if (p.display === 'prompt' || p.display === 'prompt-with-rationale') await LocalNotifications.requestPermissions();
+    } catch (e) { console.error(e); }
+    return;
+  }
   if (!('Notification' in window)) return;
   if (Notification.permission === 'default') await Notification.requestPermission();
 }
 async function scheduleAlarm(nome, time, dettaglio) {
+  if (isNative) return; // nell'app iOS ci pensa riprogrammaNotificheNative()
   if ('serviceWorker' in navigator) {
     const reg = await navigator.serviceWorker.ready;
     if (reg.active) reg.active.postMessage({ type:'SCHEDULE_ALARM', nome, time, dettaglio });
   }
+}
+
+// ---- NOTIFICHE NATIVE (app iOS) ----
+// Le sveglie vengono ricalcolate da zero a ogni modifica delle terapie e a ogni apertura:
+// si leggono le terapie attive di TUTTI i profili e si programma una notifica giornaliera
+// per ogni orario. iOS tiene al massimo 64 notifiche in coda.
+let riprogrammaTimer = null;
+function riprogrammaNotificheNative() {
+  if (!isNative || !uid) return;
+  clearTimeout(riprogrammaTimer);
+  riprogrammaTimer = setTimeout(async () => {
+    try {
+      const oggi = new Date().toISOString().split('T')[0];
+      const notifiche = [];
+      for (const p of profili) {
+        const snap = await getDocs(collection(db, 'users', uid, 'profili', p.id, 'terapie'));
+        snap.forEach(d => {
+          const t = d.data();
+          if (!t.attiva) return;
+          if (!t.cronica && t.fine && t.fine < oggi) return;
+          (t.medicinali || []).forEach(m => (m.alarms || []).forEach(orario => {
+            const [hour, minute] = String(orario).split(':').map(Number);
+            if (!Number.isInteger(hour) || !Number.isInteger(minute)) return;
+            notifiche.push({
+              id: notifiche.length + 1,
+              title: `💊 ${m.nome || 'Medicinale'}` + (profili.length > 1 ? ` · ${p.nome}` : ''),
+              body: `${m.posDosi}× ${m.posQxDose}${m.posIstr ? ' — ' + m.posIstr : ''}`,
+              schedule: { on: { hour, minute }, allowWhileIdle: true }
+            });
+          }));
+        });
+      }
+      const pending = await LocalNotifications.getPending();
+      if (pending.notifications.length) {
+        await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
+      }
+      if (notifiche.length) await LocalNotifications.schedule({ notifications: notifiche.slice(0, 64) });
+    } catch (e) { console.error('Notifiche native:', e); }
+  }, 800);
 }
 
 // ---- UTILS ----
@@ -895,7 +948,7 @@ window.removeMedFromTerapia=async(terapiaId,medId)=>{const t=terapie.find(x=>x.i
 window.removeAlarm=async(terapiaId,medId,alarmTime)=>{const t=terapie.find(x=>x.id===terapiaId);if(!t||!uid||!currentProfiloId)return;const meds=(t.medicinali||[]).map(m=>m.medId!==medId?m:{...m,alarms:(m.alarms||[]).filter(a=>a!==alarmTime)});await updateDoc(doc(db,profiloPath(),'terapie',terapiaId),{medicinali:meds});};
 window.eliminaProfilo=eliminaProfilo;
 
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(console.error);
+if(!isNative && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(console.error);
 </script>
 </body>
 </html>
