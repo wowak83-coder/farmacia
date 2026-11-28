@@ -14,6 +14,7 @@
   .btn-google{display:flex;align-items:center;gap:.8rem;padding:.9rem 2rem;background:var(--cream);color:var(--ink);border:none;border-radius:2px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;}
   .btn-google:disabled{opacity:.5;}
   .btn-google svg{width:20px;height:20px;}
+  .btn-apple{background:#000;color:#fff;border:1px solid #444;}
   #msg{font-size:.85rem;color:var(--ink-muted);min-height:1.2rem;text-align:center;}
   .success{color:#8AAE8D;font-size:1rem;text-align:center;}
   .steps{background:#1e1c18;border-radius:4px;padding:1.2rem 1.5rem;max-width:320px;width:100%;margin-top:.5rem;}
@@ -36,6 +37,10 @@
     </svg>
     Accedi con Google
   </button>
+  <button class="btn-google btn-apple" id="btnApple" style="display:none" onclick="doLoginApple()">
+    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-2.99-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.88 1.15 9.13.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.39-.92-2.4-3.65zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.76-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"/></svg>
+    Accedi con Apple
+  </button>
   <div id="postLogin" style="display:none;width:100%;max-width:320px;">
     <p class="success">✓ Accesso effettuato!</p>
     <div class="steps" style="margin-top:1rem;">
@@ -46,27 +51,63 @@
       <div class="step"><div class="step-num">4</div><span>Apri l'app dalla home — sarai già loggato ✓</span></div>
     </div>
   </div>
+
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged }
+import { GoogleAuthProvider, OAuthProvider, signInWithPopup, signInWithRedirect, signInWithCredential,
+  getRedirectResult, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { firebaseConfig } from './firebase-config.js';
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-onAuthStateChanged(auth, user => { if(user) showSuccess(); });
-getRedirectResult(auth).then(r=>{ if(r?.user) showSuccess(); }).catch(console.error);
+import { auth, isNative, FirebaseAuthentication } from './firebase-init.js';
+
+const msg = t => { const el = document.getElementById('msg'); el.style.display = 'block'; el.textContent = t; };
+const btns = () => document.querySelectorAll('.btn-google');
+const busy = on => btns().forEach(b => b.disabled = on);
+
+if (isNative) {
+  // App iOS: niente istruzioni "aggiungi a Home", accesso nativo, poi si va all'app.
+  document.getElementById('btnApple').style.display = 'flex';
+  msg('Accedi per ritrovare i tuoi medicinali su tutti i dispositivi.');
+  onAuthStateChanged(auth, user => { if (user) window.location.replace('index.html'); });
+} else {
+  onAuthStateChanged(auth, user => { if (user) showSuccess(); });
+  getRedirectResult(auth).then(r => { if (r?.user) showSuccess(); }).catch(console.error);
+}
+
 window.doLogin = async () => {
-  const btn=document.getElementById('btnLogin');btn.disabled=true;
-  document.getElementById('msg').textContent='Accesso in corso...';
-  try{ await signInWithPopup(auth,provider);showSuccess(); }
-  catch(e){
-    if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'){
-      document.getElementById('msg').textContent='Reindirizzamento...';
-      await signInWithRedirect(auth,provider);
-    }else{document.getElementById('msg').textContent='Errore: '+e.message;btn.disabled=false;}
+  busy(true); msg('Accesso in corso...');
+  if (isNative) {
+    try {
+      // Il plugin apre il login Google di iOS e ci restituisce il token;
+      // l'accesso a Firebase lo fa poi l'SDK web, che è quello usato dall'app.
+      const r = await FirebaseAuthentication.signInWithGoogle();
+      await signInWithCredential(auth, GoogleAuthProvider.credential(r.credential?.idToken));
+    } catch (e) { console.error(e); msg('Accesso non riuscito: ' + (e.message || e)); busy(false); }
+    return;
+  }
+  const provider = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); showSuccess(); }
+  catch (e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+      msg('Reindirizzamento...');
+      await signInWithRedirect(auth, provider);
+    } else { msg('Errore: ' + e.message); busy(false); }
   }
 };
+
+window.doLoginApple = async () => {
+  busy(true); msg('Accesso in corso...');
+  try {
+    const r = await FirebaseAuthentication.signInWithApple();
+    const cred = new OAuthProvider('apple.com').credential({
+      idToken: r.credential?.idToken, rawNonce: r.credential?.nonce
+    });
+    await signInWithCredential(auth, cred);
+  } catch (e) {
+    console.error(e);
+    msg('Accesso con Apple non riuscito. Serve l\'account sviluppatore Apple a pagamento: per ora usa Google.');
+    busy(false);
+  }
+};
+
 function showSuccess(){document.getElementById('btnLogin').style.display='none';document.getElementById('msg').style.display='none';document.getElementById('postLogin').style.display='block';}
 </script>
 </body>

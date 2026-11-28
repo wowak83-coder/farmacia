@@ -1,0 +1,30 @@
+{
+  "appId": "com.wowak83.farmaciadicasa",
+  "appName": "Farmacia di Casa",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": ["google.com", "apple.com"]
+    },
+    "LocalNotifications": {
+      "iconColor": "#5B7B5E"
+    }
+  },
+  "experimental": {
+    "ios": {
+      "spm": {
+        "swiftToolsVersion": "6.1",
+        "packageOptions": {
+          "@capacitor-firebase/authentication": { "symlink": true }
+        },
+        "packageTraits": {
+          "@capacitor-firebase/authentication": ["Google"]
+        }
+      }
+    }
+  }
+}
